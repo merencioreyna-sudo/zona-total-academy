@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zona Total Academy</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        
+        /* HEADER */
+        .header { background: #1a237e; color: white; padding: 15px 0; position: fixed; width: 100%; top: 0; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.5em; font-weight: bold; }
+        .nav-menu { display: flex; list-style: none; gap: 20px; }
+        .nav-link { color: white; text-decoration: none; padding: 8px 15px; }
+        .nav-link:hover { background: rgba(255,255,255,0.1); border-radius: 5px; }
+        #admin-btn { background: #ff9800; border-radius: 5px; }
+        
+        /* HERO */
+        .hero { background: #1a237e; color: white; padding: 120px 0 60px; margin-top: 60px; text-align: center; }
+        .hero h1 { font-size: 2.5em; margin-bottom: 20px; }
+        .hero p { font-size: 1.2em; margin-bottom: 30px; opacity: 0.9; }
+        .btn { display: inline-block; padding: 12px 30px; background: #ffd700; color: #1a237e; 
+               text-decoration: none; border-radius: 25px; font-weight: bold; }
+        
+        /* COURSES */
+        .courses-section { padding: 60px 0; background: white; }
+        .section-title { text-align: center; font-size: 2em; color: #1a237e; margin-bottom: 40px; }
+        .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .course-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+        .course-title { color: #1a237e; margin-bottom: 10px; font-size: 1.2em; }
+        .course-description { color: #666; margin-bottom: 15px; font-size: 0.95em; }
+        .view-course { background: #1a237e; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        
+        /* ADMIN */
+        .admin-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; padding: 20px; }
+        .admin-container { background: white; max-width: 500px; margin: 50px auto; padding: 30px; border-radius: 10px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
+        
+        /* FOOTER */
+        .footer { background: #1a237e; color: white; padding: 40px 0 20px; text-align: center; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- NOTIFICATION -->
+    <div id="notification" style="display:none; position:fixed; top:20px; right:20px; background:#28a745; color:white; padding:15px; border-radius:5px;"></div>
+    
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Zona Total Academy</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#home" class="nav-link">Inicio</a></li>
+                    <li><a href="#courses" class="nav-link">Cursos</a></li>
+                    <li><a href="#" class="nav-link" id="admin-btn">Admin</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Zona Total Academy</h1>
+            <p>Cursos gratuitos con certificado - Aprende desde cualquier dispositivo</p>
+            <a href="#courses" class="btn">Ver Cursos</a>
+        </div>
+    </section>
+
+    <!-- COURSES -->
+    <section class="courses-section" id="courses">
+        <div class="container">
+            <h2 class="section-title">Nuestros Cursos</h2>
+            <div id="courses-container">
+                <!-- Los cursos se cargarán aquí -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ADMIN -->
+    <div class="admin-overlay" id="admin-overlay">
+        <div class="admin-container">
+            <h2 style="color:#1a237e; margin-bottom:20px;"><i class="fas fa-lock"></i> Panel de Administración</h2>
+            
+            <!-- LOGIN -->
+            <div id="admin-login">
+                <p style="margin-bottom:20px;">Usuario: <strong>admin</strong> | Contraseña: <strong>admin123</strong></p>
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="login-user" placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-pass" placeholder="admin123">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" id="login-btn" style="background:#1a237e; color:white;">Ingresar</button>
+                    <button class="btn" id="cancel-admin" style="background:#666;">Cancelar</button>
+                </div>
+            </div>
+            
+            <!-- ADD COURSE -->
+            <div id="admin-panel" style="display:none;">
+                <h3 style="margin-bottom:20px;">Agregar Nuevo Curso</h3>
+                <form id="add-course-form">
+                    <div class="form-group">
+                        <label>Título del Curso *</label>
+                        <input type="text" id="add-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <input type="text" id="add-category" required placeholder="programacion">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción *</label>
+                        <textarea id="add-description" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Código EMBED de YouTube *</label>
+                        <textarea id="add-embed" rows="4" required placeholder='<iframe src="..."></iframe>'></textarea>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="btn" style="background:#28a745;">Agregar Curso</button>
+                        <button type="button" class="btn" id="logout-btn" style="background:#666;">Salir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Zona Total Academy</p>
+            <p style="margin-top:10px; font-size:0.9em; opacity:0.8;">Base de datos: Google Sheets | Todos los dispositivos sincronizados</p>
+        </div>
+    </footer>
+
+    <!-- SCRIPT PRINCIPAL -->
+    <script>
+        // ============================================
+        // CONFIGURACIÓN - REEMPLAZA CON TU ID
+        // ============================================
+        // PON AQUÍ TU ID DE GOOGLE SHEETS
+        const GOOGLE_SHEETS_ID = '1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ';
+        
+        // ============================================
+        // FUNCIONES PRINCIPALES
+        // ============================================
+        async function cargarCursos() {
+            const container = document.getElementById('courses-container');
+            container.innerHTML = '<p style="text-align:center; padding:40px;">Cargando cursos desde Google Sheets...</p>';
+            
+            try {
+                // URL para leer Google Sheets
+                const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:json&t=${Date.now()}`;
+                const respuesta = await fetch(url);
+                const texto = await respuesta.text();
+                
+                // Procesar respuesta de Google
+                const json = JSON.parse(texto.substring(47).slice(0, -2));
+                const rows = json.table.rows;
+                
+                if (rows.length <= 1) { // Solo encabezados
+                    container.innerHTML = '<p style="text-align:center; padding:40px;">No hay cursos aún. Agrega el primero desde Admin.</p>';
+                    return;
+                }
+                
+                // Generar HTML de cursos
+                let html = '<div class="courses-grid">';
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.c && row.c.length >= 6) {
+                        const curso = {
+                            title: row.c[1]?.v || '',
+                            category: row.c[2]?.v || 'general',
+                            description: row.c[3]?.v || '',
+                            embed: row.c[5]?.v || ''
+                        };
+                        
+                        if (curso.title) {
+                            html += `
+                                <div class="course-card">
+                                    <h3 class="course-title">${curso.title}</h3>
+                                    <p class="course-description">${curso.description}</p>
+                                    <p><strong>Categoría:</strong> ${curso.category}</p>
+                                    <button class="view-course" onclick="verCurso('${curso.embed.replace(/'/g, "\\'")}', '${curso.title}')">
+                                        Ver Curso
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                html += '</div>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p style="text-align:center; padding:40px; color:red;">Error al cargar cursos. Verifica tu ID de Google Sheets.</p>';
+            }
+        }
+        
+        function verCurso(embed, titulo) {
+            // Abrir curso en nueva ventana
+            const html = `
+                <html>
+                <head><title>${titulo}</title></head>
+                <body style="margin:0; padding:20px; background:#f0f2f5;">
+                    <div style="max-width:800px; margin:0 auto;">
+                        <h1>${titulo}</h1>
+                        <div>${embed}</div>
+                        <button onclick="window.close()" style="margin-top:20px; padding:10px 20px; background:#1a237e; color:white; border:none; border-radius:5px; cursor:pointer;">
+                            Cerrar
+                        </button>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            const ventana = window.open('', '_blank');
+            ventana.document.write(html);
+        }
+        
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            const noti = document.getElementById('notification');
+            noti.textContent = mensaje;
+            noti.style.background = tipo === 'error' ? '#dc3545' : '#28a745';
+            noti.style.display = 'block';
+            
+            setTimeout(() => {
+                noti.style.display = 'none';
+            }, 3000);
+        }
+        
+        // ============================================
+        // ADMINISTRACIÓN
+        // ============================================
+        function agregarCurso() {
+            const curso = {
+                title: document.getElementById('add-title').value.trim(),
+                category: document.getElementById('add-category').value.trim().toLowerCase(),
+                description: document.getElementById('add-description').value.trim(),
+                embed: document.getElementById('add-embed').value.trim()
+            };
+            
+            if (!curso.title || !curso.category || !curso.description || !curso.embed) {
+                mostrarNotificacion('Completa todos los campos', 'error');
+                return;
+            }
+            
+            // Generar URL para agregar manualmente a Google Sheets
+            const fila = [
+                Date.now(), // id
+                curso.title,
+                curso.category,
+                curso.description,
+                'YouTube', // platform
+                curso.embed,
+                '', // image
+                'TRUE', // certificate
+                new Date().toISOString() // created_at
+            ].map(d => encodeURIComponent(d)).join(',');
+            
+            // Abrir Google Sheets para agregar manualmente
+            const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/edit#gid=0`;
+            window.open(url, '_blank');
+            
+            // Mostrar instrucciones
+            mostrarNotificacion('Se abrió Google Sheets. Agrega manualmente el curso en una nueva fila.', 'info');
+            
+            // Limpiar formulario
+            document.getElementById('add-course-form').reset();
+        }
+        
+        // ============================================
+        // EVENTOS
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar cursos al inicio
+            cargarCursos();
+            
+            // Botón Admin
+            document.getElementById('admin-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('admin-overlay').style.display = 'block';
+            });
+            
+            // Cancelar Admin
+            document.getElementById('cancel-admin').addEventListener('click', function() {
+                document.getElementById('admin-overlay').style.display = 'none';
+            });
+            
+            // Login
+            document.getElementById('login-btn').addEventListener('click', function() {
+                const user = document.getElementById('login-user').value;
+                const pass = document.getElementById('login-pass').value;
+                
+                if (user === 'admin' && pass === 'admin123') {
+                    document.getElementById('admin-login').style.display = 'none';
+                    document.getElementById('admin-panel').style.display = 'block';
+                    mostrarNotificacion('Sesión iniciada', 'success');
+                } else {
+                    mostrarNotificacion('Credenciales incorrectas', 'error');
+                }
+            });
+            
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                document.getElementById('admin-panel').style.display = 'none';
+                document.getElementById('admin-login').style.display = 'block';
+                document.getElementById('admin-overlay').style.display = 'none';
+                mostrarNotificacion('Sesión cerrada', 'info');
+            });
+            
+            // Formulario agregar curso
+            document.getElementById('add-course-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                agregarCurso();
+            });
+            
+            // Cerrar admin al hacer clic fuera
+            document.getElementById('admin-overlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                }
+            });
+        });
+        
+        // Función para recargar cursos (puedes llamarla manualmente)
+        window.recargarCursos = function() {
+            cargarCursos();
+            mostrarNotificacion('Cursos recargados', 'success');
+        };
+    </script>
+</body>
+</html>

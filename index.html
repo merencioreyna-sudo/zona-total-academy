@@ -146,203 +146,332 @@
     </footer>
 
     <!-- SCRIPT PRINCIPAL -->
-    <script>
-        // ============================================
-        // CONFIGURACIÓN - REEMPLAZA CON TU ID
-        // ============================================
-        // PON AQUÍ TU ID DE GOOGLE SHEETS
-        const GOOGLE_SHEETS_ID = '1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ';
+   <script>
+// ============================================
+// CONFIGURACIÓN - REEMPLAZA CON TU ENLACE
+// ============================================
+// OBTÉN ESTE ENLACE DE "PUBLICAR EN LA WEB"
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJpv1h9XBYo7gJPLBx4U_1IiRkf0v-y2W2Z_o-O3V67aPSqAzvBdAomO7SPy-dVSYw3cyUwD3C0oVJ/pub?output=csv';
+
+// Credenciales del admin
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+
+// ============================================
+// FUNCIONES PRINCIPALES
+// ============================================
+async function cargarCursos() {
+    const container = document.getElementById('courses-container');
+    container.innerHTML = '<p style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Cargando cursos...</p>';
+    
+    try {
+        // Cargar CSV desde Google Sheets
+        const respuesta = await fetch(GOOGLE_SHEETS_URL + '&_=' + Date.now());
+        const csvText = await respuesta.text();
         
-        // ============================================
-        // FUNCIONES PRINCIPALES
-        // ============================================
-        async function cargarCursos() {
-            const container = document.getElementById('courses-container');
-            container.innerHTML = '<p style="text-align:center; padding:40px;">Cargando cursos desde Google Sheets...</p>';
+        // Convertir CSV a array
+        const lineas = csvText.split('\n');
+        const cursos = [];
+        
+        // Saltar encabezados (primera línea)
+        for (let i = 1; i < lineas.length; i++) {
+            const linea = lineas[i].trim();
+            if (!linea) continue;
             
-            try {
-                // URL para leer Google Sheets
-                const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:json&t=${Date.now()}`;
-                const respuesta = await fetch(url);
-                const texto = await respuesta.text();
+            // Separar por comas (CSV simple)
+            const columnas = linea.split(',').map(col => col.trim());
+            
+            if (columnas.length >= 6 && columnas[1]) { // columnas[1] = título
+                const curso = {
+                    id: columnas[0] || i,
+                    title: columnas[1] || '',
+                    category: columnas[2] || 'general',
+                    description: columnas[3] || '',
+                    platform: columnas[4] || 'YouTube',
+                    embed: columnas[5] || '',
+                    image: columnas[6] || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+                    certificate: columnas[7] !== 'FALSE',
+                    created: columnas[8] || '2024-01-01'
+                };
                 
-                // Procesar respuesta de Google
-                const json = JSON.parse(texto.substring(47).slice(0, -2));
-                const rows = json.table.rows;
-                
-                if (rows.length <= 1) { // Solo encabezados
-                    container.innerHTML = '<p style="text-align:center; padding:40px;">No hay cursos aún. Agrega el primero desde Admin.</p>';
-                    return;
-                }
-                
-                // Generar HTML de cursos
-                let html = '<div class="courses-grid">';
-                
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (row.c && row.c.length >= 6) {
-                        const curso = {
-                            title: row.c[1]?.v || '',
-                            category: row.c[2]?.v || 'general',
-                            description: row.c[3]?.v || '',
-                            embed: row.c[5]?.v || ''
-                        };
-                        
-                        if (curso.title) {
-                            html += `
-                                <div class="course-card">
-                                    <h3 class="course-title">${curso.title}</h3>
-                                    <p class="course-description">${curso.description}</p>
-                                    <p><strong>Categoría:</strong> ${curso.category}</p>
-                                    <button class="view-course" onclick="verCurso('${curso.embed.replace(/'/g, "\\'")}', '${curso.title}')">
-                                        Ver Curso
-                                    </button>
-                                </div>
-                            `;
-                        }
-                    }
-                }
-                
-                html += '</div>';
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Error:', error);
-                container.innerHTML = '<p style="text-align:center; padding:40px; color:red;">Error al cargar cursos. Verifica tu ID de Google Sheets.</p>';
+                cursos.push(curso);
             }
         }
         
-        function verCurso(embed, titulo) {
-            // Abrir curso en nueva ventana
-            const html = `
-                <html>
-                <head><title>${titulo}</title></head>
-                <body style="margin:0; padding:20px; background:#f0f2f5;">
-                    <div style="max-width:800px; margin:0 auto;">
-                        <h1>${titulo}</h1>
-                        <div>${embed}</div>
-                        <button onclick="window.close()" style="margin-top:20px; padding:10px 20px; background:#1a237e; color:white; border:none; border-radius:5px; cursor:pointer;">
-                            Cerrar
-                        </button>
+        // Mostrar cursos
+        mostrarCursos(cursos);
+        
+    } catch (error) {
+        console.error('Error cargando cursos:', error);
+        container.innerHTML = `
+            <div style="text-align:center; padding:40px;">
+                <i class="fas fa-exclamation-triangle" style="font-size:3em;color:#ff9800;"></i>
+                <h3 style="color:#333; margin:20px 0 10px;">No se pudieron cargar los cursos</h3>
+                <p style="color:#666;">Posibles soluciones:</p>
+                <ol style="text-align:left; max-width:500px; margin:20px auto;">
+                    <li>Ve a Google Sheets → Archivo → Compartir → Publicar en la web</li>
+                    <li>Selecciona "Publicar" y copia el enlace .csv</li>
+                    <li>Actualiza la variable GOOGLE_SHEETS_URL en el código</li>
+                </ol>
+                <button onclick="location.reload()" style="padding:10px 20px; background:#1a237e; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <i class="fas fa-redo"></i> Reintentar
+                </button>
+            </div>
+        `;
+    }
+}
+
+function mostrarCursos(cursos) {
+    const container = document.getElementById('courses-container');
+    
+    if (!cursos || cursos.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:50px;">
+                <i class="fas fa-book-open" style="font-size:3em;color:#ddd;"></i>
+                <h3 style="color:#666; margin:20px 0 10px;">No hay cursos disponibles</h3>
+                <p style="color:#999;">Agrega el primer curso desde el panel de administración</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="courses-grid">';
+    
+    cursos.forEach(curso => {
+        const cat = curso.category || 'general';
+        const catDisplay = cat.charAt(0).toUpperCase() + cat.slice(1);
+        
+        html += `
+            <div class="course-card" data-category="${cat}">
+                <div class="course-image" style="background-image:url('${curso.image}')"></div>
+                <div class="course-content">
+                    <h3 class="course-title">${curso.title}</h3>
+                    <p class="course-description">${curso.description}</p>
+                    <div class="course-meta">
+                        <span class="course-category">${catDisplay}</span>
+                        <span class="course-platform">${curso.platform}</span>
+                        ${curso.certificate ? '<span class="certificate-badge"><i class="fas fa-certificate"></i> Certificado</span>' : ''}
                     </div>
-                </body>
-                </html>
-            `;
-            
-            const ventana = window.open('', '_blank');
-            ventana.document.write(html);
-        }
+                    <button class="view-course" onclick="verCurso('${curso.title.replace(/'/g, "\\'")}', '${curso.embed.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-play"></i> Ver Curso
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function verCurso(titulo, embed) {
+    const ventana = window.open('', '_blank', 'width=800,height=600');
+    ventana.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${titulo} - Zona Total Academy</title>
+            <style>
+                body { margin:0; padding:20px; background:#f0f2f5; font-family:Arial, sans-serif; }
+                .container { max-width:800px; margin:0 auto; }
+                h1 { color:#1a237e; margin-bottom:20px; }
+                .video-container { position:relative; padding-bottom:56.25%; height:0; margin:20px 0; }
+                .video-container iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
+                button { padding:10px 20px; background:#1a237e; color:white; border:none; border-radius:5px; cursor:pointer; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>${titulo}</h1>
+                <div class="video-container">${embed}</div>
+                <button onclick="window.close()"><i class="fas fa-times"></i> Cerrar</button>
+            </div>
+        </body>
+        </html>
+    `);
+}
+
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    // Crear notificación si no existe
+    let noti = document.getElementById('notification');
+    if (!noti) {
+        noti = document.createElement('div');
+        noti.id = 'notification';
+        noti.style.cssText = 'position:fixed; top:20px; right:20px; padding:15px 20px; color:white; border-radius:5px; z-index:9999; display:none;';
+        document.body.appendChild(noti);
+    }
+    
+    noti.textContent = mensaje;
+    noti.style.background = tipo === 'error' ? '#dc3545' : tipo === 'warning' ? '#ff9800' : '#28a745';
+    noti.style.display = 'block';
+    
+    setTimeout(() => {
+        noti.style.display = 'none';
+    }, 3000);
+}
+
+// ============================================
+// ADMINISTRACIÓN
+// ============================================
+function abrirGoogleSheets() {
+    // Obtener valores del formulario
+    const titulo = document.getElementById('add-title').value.trim();
+    const categoria = document.getElementById('add-category').value.trim();
+    const descripcion = document.getElementById('add-description').value.trim();
+    const embed = document.getElementById('add-embed').value.trim();
+    
+    if (!titulo || !categoria || !descripcion || !embed) {
+        mostrarNotificacion('Completa todos los campos requeridos', 'error');
+        return;
+    }
+    
+    // Crear datos para Google Sheets
+    const datos = [
+        Date.now(), // id
+        titulo,
+        categoria,
+        descripcion,
+        'YouTube', // platform
+        embed,
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+        'TRUE', // certificate
+        new Date().toISOString().split('T')[0] // fecha
+    ];
+    
+    // Abrir Google Sheets con instrucciones
+    const url = GOOGLE_SHEETS_URL.replace('/pub?output=csv', '/edit#gid=0');
+    const ventana = window.open(url, '_blank');
+    
+    // Mostrar instrucciones
+    mostrarNotificacion('Se abrió Google Sheets. Agrega estos datos en una nueva fila:', 'info');
+    
+    // Mostrar datos en la página
+    setTimeout(() => {
+        const instrucciones = document.createElement('div');
+        instrucciones.style.cssText = 'position:fixed; bottom:20px; right:20px; background:white; padding:20px; border-radius:10px; box-shadow:0 5px 20px rgba(0,0,0,0.2); z-index:9998; max-width:400px;';
+        instrucciones.innerHTML = `
+            <h3 style="margin-top:0; color:#1a237e;">Instrucciones:</h3>
+            <p>1. Ve a Google Sheets (se abrió en otra pestaña)</p>
+            <p>2. Agrega una NUEVA FILA al final</p>
+            <p>3. Copia estos datos (una columna cada uno):</p>
+            <div style="background:#f8f9fa; padding:15px; border-radius:5px; margin:10px 0; font-family:monospace; font-size:12px;">
+                ${datos.map((d, i) => `<div>Columna ${String.fromCharCode(65 + i)}: ${d}</div>`).join('')}
+            </div>
+            <button onclick="this.parentElement.remove()" style="padding:8px 15px; background:#666; color:white; border:none; border-radius:5px; cursor:pointer;">
+                Cerrar instrucciones
+            </button>
+        `;
+        document.body.appendChild(instrucciones);
+    }, 1000);
+    
+    // Limpiar formulario
+    document.getElementById('add-course-form').reset();
+}
+
+// ============================================
+// EVENTOS Y CONFIGURACIÓN
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar cursos al inicio
+    cargarCursos();
+    
+    // Configurar hamburger menu
+    const hamburger = document.querySelector('.hamburger');
+    const navMenu = document.querySelector('.nav-menu');
+    
+    if (hamburger) {
+        hamburger.addEventListener('click', function() {
+            navMenu.classList.toggle('active');
+        });
+    }
+    
+    // Botón Admin
+    document.getElementById('admin-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('admin-overlay').style.display = 'block';
+    });
+    
+    // Cancelar Admin
+    document.getElementById('cancel-admin').addEventListener('click', function() {
+        document.getElementById('admin-overlay').style.display = 'none';
+        document.getElementById('login-user').value = '';
+        document.getElementById('login-pass').value = '';
+    });
+    
+    // Login
+    document.getElementById('login-btn').addEventListener('click', function() {
+        const user = document.getElementById('login-user').value;
+        const pass = document.getElementById('login-pass').value;
         
-        function mostrarNotificacion(mensaje, tipo = 'success') {
-            const noti = document.getElementById('notification');
-            noti.textContent = mensaje;
-            noti.style.background = tipo === 'error' ? '#dc3545' : '#28a745';
-            noti.style.display = 'block';
-            
-            setTimeout(() => {
-                noti.style.display = 'none';
-            }, 3000);
+        if (user === ADMIN_USER && pass === ADMIN_PASS) {
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            mostrarNotificacion('Sesión iniciada correctamente', 'success');
+        } else {
+            mostrarNotificacion('Credenciales incorrectas', 'error');
         }
-        
-        // ============================================
-        // ADMINISTRACIÓN
-        // ============================================
-        function agregarCurso() {
-            const curso = {
-                title: document.getElementById('add-title').value.trim(),
-                category: document.getElementById('add-category').value.trim().toLowerCase(),
-                description: document.getElementById('add-description').value.trim(),
-                embed: document.getElementById('add-embed').value.trim()
-            };
+    });
+    
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', function() {
+        document.getElementById('admin-panel').style.display = 'none';
+        document.getElementById('admin-login').style.display = 'block';
+        document.getElementById('admin-overlay').style.display = 'none';
+        document.getElementById('login-user').value = '';
+        document.getElementById('login-pass').value = '';
+        mostrarNotificacion('Sesión cerrada', 'info');
+    });
+    
+    // Formulario agregar curso
+    document.getElementById('add-course-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        abrirGoogleSheets();
+    });
+    
+    // Buscador
+    const buscador = document.getElementById('course-search');
+    if (buscador) {
+        buscador.addEventListener('input', function(e) {
+            const termino = e.target.value.toLowerCase().trim();
+            const cursos = document.querySelectorAll('.course-card');
             
-            if (!curso.title || !curso.category || !curso.description || !curso.embed) {
-                mostrarNotificacion('Completa todos los campos', 'error');
-                return;
-            }
-            
-            // Generar URL para agregar manualmente a Google Sheets
-            const fila = [
-                Date.now(), // id
-                curso.title,
-                curso.category,
-                curso.description,
-                'YouTube', // platform
-                curso.embed,
-                '', // image
-                'TRUE', // certificate
-                new Date().toISOString() // created_at
-            ].map(d => encodeURIComponent(d)).join(',');
-            
-            // Abrir Google Sheets para agregar manualmente
-            const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/edit#gid=0`;
-            window.open(url, '_blank');
-            
-            // Mostrar instrucciones
-            mostrarNotificacion('Se abrió Google Sheets. Agrega manualmente el curso en una nueva fila.', 'info');
-            
-            // Limpiar formulario
-            document.getElementById('add-course-form').reset();
-        }
-        
-        // ============================================
-        // EVENTOS
-        // ============================================
-        document.addEventListener('DOMContentLoaded', function() {
-            // Cargar cursos al inicio
-            cargarCursos();
-            
-            // Botón Admin
-            document.getElementById('admin-btn').addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('admin-overlay').style.display = 'block';
-            });
-            
-            // Cancelar Admin
-            document.getElementById('cancel-admin').addEventListener('click', function() {
-                document.getElementById('admin-overlay').style.display = 'none';
-            });
-            
-            // Login
-            document.getElementById('login-btn').addEventListener('click', function() {
-                const user = document.getElementById('login-user').value;
-                const pass = document.getElementById('login-pass').value;
+            cursos.forEach(curso => {
+                const titulo = curso.querySelector('.course-title').textContent.toLowerCase();
+                const desc = curso.querySelector('.course-description').textContent.toLowerCase();
                 
-                if (user === 'admin' && pass === 'admin123') {
-                    document.getElementById('admin-login').style.display = 'none';
-                    document.getElementById('admin-panel').style.display = 'block';
-                    mostrarNotificacion('Sesión iniciada', 'success');
+                if (titulo.includes(termino) || desc.includes(termino)) {
+                    curso.style.display = 'block';
                 } else {
-                    mostrarNotificacion('Credenciales incorrectas', 'error');
-                }
-            });
-            
-            // Logout
-            document.getElementById('logout-btn').addEventListener('click', function() {
-                document.getElementById('admin-panel').style.display = 'none';
-                document.getElementById('admin-login').style.display = 'block';
-                document.getElementById('admin-overlay').style.display = 'none';
-                mostrarNotificacion('Sesión cerrada', 'info');
-            });
-            
-            // Formulario agregar curso
-            document.getElementById('add-course-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                agregarCurso();
-            });
-            
-            // Cerrar admin al hacer clic fuera
-            document.getElementById('admin-overlay').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.style.display = 'none';
+                    curso.style.display = 'none';
                 }
             });
         });
-        
-        // Función para recargar cursos (puedes llamarla manualmente)
-        window.recargarCursos = function() {
-            cargarCursos();
-            mostrarNotificacion('Cursos recargados', 'success');
-        };
-    </script>
+    }
+    
+    // Cerrar admin al hacer clic fuera
+    document.getElementById('admin-overlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+        }
+    });
+    
+    // Info de versión
+    const ahora = new Date();
+    const info = document.getElementById('version-info');
+    if (info) {
+        info.textContent = `Sincronizado con Google Sheets | ${ahora.toLocaleDateString()}`;
+    }
+    
+    console.log('✅ Zona Total Academy - Sistema cargado');
+});
+
+// Función para recargar manualmente
+window.recargarCursos = function() {
+    cargarCursos();
+    mostrarNotificacion('Cursos recargados', 'success');
+};
+</script>
 </body>
 </html>

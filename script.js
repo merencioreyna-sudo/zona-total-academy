@@ -1,10 +1,5 @@
-// Configuración de Google Sheets API
-const GOOGLE_SHEET_ID = '1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ'; // <-- REEMPLAZA CON TU ID
-const API_KEY = 'TU_API_KEY_AQUI'; // <-- OPCIONAL: Para más seguridad
-const SHEET_NAME = 'Cursos'; // Nombre de la hoja
-
-// URL base para la API de Google Sheets
-const SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_NAME}`;
+// CONFIGURACIÓN SIMPLE - SOLO PEGA LA URL COMPLETA DE TU GOOGLE SHEETS
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJpv1h9XBYo7gJPLBx4U_1IiRkf0v-y2W2Z_o-O3V67aPSqAzvBdAomO7SPy-dVSYw3cyUwD3C0oVJ/pub?gid=0&single=true&output=csv';
 
 // Variables globales
 let courses = [];
@@ -15,7 +10,7 @@ let currentCategory = "todos";
 let searchQuery = "";
 let customLogoUrl = localStorage.getItem('customLogoUrl') || "";
 
-// DOM Elements (los mismos que antes)
+// DOM Elements
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const coursesGrid = document.getElementById('courses-grid');
@@ -40,22 +35,6 @@ const modalCourseContent = document.getElementById('modal-course-content');
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 const adminCoursesList = document.getElementById('admin-courses-list');
-const addCourseForm = document.getElementById('add-course-form');
-const newCourseCategory = document.getElementById('new-course-category');
-const logoUrlInput = document.getElementById('logo-url');
-const logoPreviewImg = document.getElementById('logo-preview-img');
-const defaultLogoText = document.getElementById('default-logo-text');
-const saveLogoBtn = document.getElementById('save-logo-btn');
-const resetLogoBtn = document.getElementById('reset-logo-btn');
-const heroLogoImg = document.getElementById('hero-logo-img');
-const loadingCourses = document.getElementById('loading-courses');
-const errorCourses = document.getElementById('error-courses');
-const errorMessage = document.getElementById('error-message');
-const retryLoadBtn = document.getElementById('retry-load-btn');
-const formStatus = document.getElementById('form-status');
-
-// Cache settings
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -63,19 +42,13 @@ document.addEventListener('DOMContentLoaded', function() {
     initFilters();
     initAdmin();
     initModal();
-    updateLogoPreview();
     updateHeroLogo();
     
     // Cargar cursos desde Google Sheets
     loadCoursesFromGoogleSheets();
-    
-    // Setup retry button
-    if (retryLoadBtn) {
-        retryLoadBtn.addEventListener('click', loadCoursesFromGoogleSheets);
-    }
 });
 
-// Navigation (igual que antes)
+// Navigation
 function initNavigation() {
     // Mobile menu toggle
     hamburger.addEventListener('click', () => {
@@ -89,7 +62,7 @@ function initNavigation() {
         navMenu.classList.remove('active');
     }));
     
-    // Smooth scrolling for anchor links
+    // Smooth scrolling
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             e.preventDefault();
@@ -101,27 +74,6 @@ function initNavigation() {
                 window.scrollTo({
                     top: targetElement.offsetTop - 80,
                     behavior: 'smooth'
-                });
-            }
-        });
-    });
-    
-    // Set active nav link based on scroll position
-    window.addEventListener('scroll', () => {
-        const sections = document.querySelectorAll('section[id]');
-        const scrollPos = window.scrollY + 100;
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            const sectionId = section.getAttribute('id');
-            
-            if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === `#${sectionId}`) {
-                        link.classList.add('active');
-                    }
                 });
             }
         });
@@ -152,115 +104,58 @@ function initFilters() {
     });
 }
 
-// Función principal para cargar desde Google Sheets
+// FUNCIÓN PRINCIPAL - CARGAR DATOS DESDE GOOGLE SHEETS
 async function loadCoursesFromGoogleSheets() {
     try {
-        // Mostrar estado de carga
-        showLoading(true);
-        hideError();
+        console.log('Cargando datos desde:', GOOGLE_SHEETS_URL);
         
-        // Construir URL con parámetros
-        let url = `${SHEETS_API_URL}?valueRenderOption=FORMATTED_VALUE`;
+        const response = await fetch(GOOGLE_SHEETS_URL);
+        const csvText = await response.text();
         
-        // Añadir API key si está configurada
-        if (API_KEY && API_KEY !== 'TU_API_KEY_AQUI') {
-            url += `&key=${API_KEY}`;
-        }
+        // Parsear CSV
+        const rows = csvText.split('\n').filter(row => row.trim() !== '');
+        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
         
-        const response = await fetch(url);
+        courses = rows.slice(1).map((row, index) => {
+            const values = row.split(',').map(v => v.trim());
+            const course = { id: index + 1 };
+            
+            headers.forEach((header, i) => {
+                if (values[i]) {
+                    course[header] = values[i];
+                }
+            });
+            
+            return course;
+        }).filter(course => course.titulo || course.title);
         
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
+        console.log('Cursos cargados:', courses.length);
         
-        const data = await response.json();
+        // Actualizar categorías
+        updateCategoriesFromCourses();
         
-        if (data.values && data.values.length > 0) {
-            // Convertir datos de Google Sheets a nuestro formato
-            courses = parseSheetData(data.values);
-            
-            // Actualizar categorías
-            updateCategoriesFromCourses();
-            
-            // Actualizar filtros
-            updateFilterButtons();
-            
-            // Renderizar cursos
-            renderCourses();
-            
-            // Actualizar contador
-            updateCourseCount();
-            
-            // Guardar en caché
-            saveToCache();
-            
-        } else {
-            throw new Error('No se encontraron datos en la hoja');
-        }
+        // Actualizar filtros
+        updateFilterButtons();
+        
+        // Renderizar cursos
+        renderCourses();
+        
+        // Actualizar contador
+        updateCourseCount();
         
     } catch (error) {
-        console.error('Error al cargar cursos:', error);
-        
-        // Intentar cargar del caché
-        const cached = loadFromCache();
-        if (cached) {
-            courses = cached;
-            updateCategoriesFromCourses();
-            updateFilterButtons();
-            renderCourses();
-            updateCourseCount();
-            showError('Usando datos cacheados. ' + error.message);
-        } else {
-            showError(`No se pudieron cargar los cursos: ${error.message}. Verifica que la hoja sea pública.`);
-        }
-    } finally {
-        showLoading(false);
+        console.error('Error al cargar Google Sheets:', error);
+        alert('Error al cargar los cursos. Verifica la URL de Google Sheets.');
     }
-}
-
-// Parsear datos de Google Sheets
-function parseSheetData(sheetData) {
-    const headers = sheetData[0];
-    const rows = sheetData.slice(1);
-    
-    return rows.map((row, index) => {
-        const course = {
-            id: index + 1
-        };
-        
-        // Mapear columnas según estructura esperada
-        headers.forEach((header, i) => {
-            const key = header.toLowerCase().trim();
-            let value = row[i] || '';
-            
-            // Convertir valores booleanos
-            if (key === 'certificado' || key === 'certificate') {
-                value = value.toString().toUpperCase() === 'TRUE' || value === true || value === 'Sí';
-            }
-            
-            if (key === 'activo' || key === 'active') {
-                value = value.toString().toUpperCase() === 'TRUE' || value === true || value === 'Sí';
-            }
-            
-            course[key] = value;
-        });
-        
-        // Asegurar campos requeridos
-        if (!course.title && row[0]) course.title = row[0];
-        if (!course.description && row[1]) course.description = row[1];
-        if (!course.category && row[2]) course.category = row[2];
-        if (!course.platform && row[3]) course.platform = row[3];
-        if (!course.link && row[4]) course.link = row[4];
-        
-        return course;
-    }).filter(course => course.title); // Filtrar filas vacías
 }
 
 function updateCategoriesFromCourses() {
     // Obtener categorías únicas de los cursos
-    const uniqueCategories = [...new Set(courses.map(course => course.category))];
+    const uniqueCategories = [...new Set(courses.map(course => 
+        course.categoria || course.category || 'General'
+    ))];
     
-    // Agregar nuevas categorías a la lista
+    // Agregar nuevas categorías
     uniqueCategories.forEach(catName => {
         if (catName && !categories.find(cat => cat.id === catName.toLowerCase())) {
             const displayName = catName.charAt(0).toUpperCase() + catName.slice(1);
@@ -271,20 +166,11 @@ function updateCategoriesFromCourses() {
             });
         }
     });
-    
-    // Ordenar categorías alfabéticamente (excepto "todos")
-    categories.sort((a, b) => {
-        if (a.id === 'todos') return -1;
-        if (b.id === 'todos') return 1;
-        return a.displayName.localeCompare(b.displayName);
-    });
 }
 
 function updateFilterButtons() {
-    // Limpiar botones existentes
     filterButtons.innerHTML = '';
     
-    // Crear nuevos botones
     categories.forEach(category => {
         const button = document.createElement('button');
         button.className = `filter-btn ${category.id === currentCategory ? 'active' : ''}`;
@@ -303,45 +189,49 @@ function updateFilterButtons() {
 function renderCourses() {
     coursesGrid.innerHTML = '';
     
-    // Filter courses based on category and search
+    // Filtrar cursos
     let filteredCourses = courses.filter(course => 
-        course.active === true || course.active === 'TRUE' || course.active === 'Sí' || course.active === undefined
+        course.activo !== 'FALSE' && course.active !== 'FALSE'
     );
     
     if (currentCategory !== 'todos') {
-        filteredCourses = filteredCourses.filter(course => 
-            course.category && course.category.toLowerCase() === currentCategory
-        );
+        filteredCourses = filteredCourses.filter(course => {
+            const cat = (course.categoria || course.category || '').toLowerCase();
+            return cat === currentCategory;
+        });
     }
     
     if (searchQuery) {
-        filteredCourses = filteredCourses.filter(course => 
-            (course.title && course.title.toLowerCase().includes(searchQuery)) ||
-            (course.description && course.description.toLowerCase().includes(searchQuery)) ||
-            (course.platform && course.platform.toLowerCase().includes(searchQuery))
-        );
+        filteredCourses = filteredCourses.filter(course => {
+            const title = (course.titulo || course.title || '').toLowerCase();
+            const desc = (course.descripcion || course.description || '').toLowerCase();
+            const platform = (course.plataforma || course.platform || '').toLowerCase();
+            
+            return title.includes(searchQuery) || 
+                   desc.includes(searchQuery) || 
+                   platform.includes(searchQuery);
+        });
     }
     
-    // Render course cards
+    // Renderizar tarjetas
     filteredCourses.forEach(course => {
-        const category = categories.find(cat => cat.id === (course.category || '').toLowerCase()) || 
-                        { displayName: course.category || 'General' };
+        const categoryName = course.categoria || course.category || 'General';
+        const category = categories.find(cat => cat.id === categoryName.toLowerCase()) || 
+                        { displayName: categoryName };
+        
         const courseCard = createCourseCard(course, category);
         coursesGrid.appendChild(courseCard);
     });
     
-    // If no courses found
+    // Si no hay cursos
     if (filteredCourses.length === 0) {
-        const noResults = document.createElement('div');
-        noResults.className = 'no-results';
-        noResults.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
+        coursesGrid.innerHTML = `
+            <div style="text-align: center; padding: 40px; grid-column: 1/-1;">
                 <i class="fas fa-search" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 20px;"></i>
                 <h3 style="margin-bottom: 10px;">No se encontraron cursos</h3>
                 <p style="color: var(--text-secondary);">Intenta con otra categoría o término de búsqueda</p>
             </div>
         `;
-        coursesGrid.appendChild(noResults);
     }
 }
 
@@ -349,7 +239,11 @@ function createCourseCard(course, category) {
     const courseCard = document.createElement('div');
     courseCard.className = 'course-card';
     
-    const hasCertificate = course.certificate === true || course.certificate === 'TRUE' || course.certificate === 'Sí';
+    const title = course.titulo || course.title || 'Curso sin título';
+    const description = course.descripcion || course.description || 'Descripción no disponible';
+    const platform = course.plataforma || course.platform || 'Plataforma no especificada';
+    const link = course.enlace || course.link || '#';
+    const hasCertificate = (course.certificado === 'TRUE' || course.certificate === 'TRUE');
     
     courseCard.innerHTML = `
         <div class="course-image">
@@ -357,34 +251,29 @@ function createCourseCard(course, category) {
         </div>
         <div class="course-content">
             <div class="course-header">
-                <h3 class="course-title">${course.title || 'Curso sin título'}</h3>
+                <h3 class="course-title">${title}</h3>
                 ${hasCertificate ? 
                     '<div class="certificate-badge"><i class="fas fa-certificate"></i> Certificado</div>' : 
                     ''
                 }
             </div>
-            <p class="course-description">${course.description || 'Descripción no disponible'}</p>
+            <p class="course-description">${description}</p>
             <div class="course-meta">
                 <span class="course-category">${category.displayName}</span>
-                <span class="course-platform">${course.platform || 'Plataforma no especificada'}</span>
+                <span class="course-platform">${platform}</span>
             </div>
             <div class="course-actions">
-                <button class="btn btn-small btn-primary view-course-btn" data-id="${course.id}">
+                <button class="btn btn-small btn-primary view-course-btn">
                     Ver Detalles
                 </button>
-                ${course.link ? 
-                    `<a href="${course.link}" target="_blank" class="btn btn-small btn-secondary">
-                        Ir al Curso
-                    </a>` : 
-                    `<button class="btn btn-small btn-secondary" disabled>
-                        Sin enlace
-                    </button>`
-                }
+                <a href="${link}" target="_blank" class="btn btn-small btn-secondary">
+                    Ir al Curso
+                </a>
             </div>
         </div>
     `;
     
-    // Add event listener for view course button
+    // Event listener para ver detalles
     courseCard.querySelector('.view-course-btn').addEventListener('click', () => {
         openCourseModal(course);
     });
@@ -392,86 +281,30 @@ function createCourseCard(course, category) {
     return courseCard;
 }
 
-// Estados de UI
-function showLoading(show) {
-    if (loadingCourses) {
-        loadingCourses.style.display = show ? 'block' : 'none';
-    }
-    if (coursesGrid) {
-        coursesGrid.style.display = show ? 'none' : 'grid';
-    }
-}
-
-function showError(message) {
-    if (errorCourses && errorMessage) {
-        errorMessage.textContent = message;
-        errorCourses.style.display = 'block';
-        coursesGrid.style.display = 'none';
-    }
-}
-
-function hideError() {
-    if (errorCourses) {
-        errorCourses.style.display = 'none';
-        coursesGrid.style.display = 'grid';
-    }
-}
-
 function updateCourseCount() {
     if (totalCoursesElement) {
         const activeCourses = courses.filter(course => 
-            course.active === true || course.active === 'TRUE' || course.active === 'Sí' || course.active === undefined
+            course.activo !== 'FALSE' && course.active !== 'FALSE'
         ).length;
         totalCoursesElement.textContent = activeCourses;
     }
 }
 
-// Sistema de caché
-function saveToCache() {
-    try {
-        localStorage.setItem('courses_cache', JSON.stringify(courses));
-        localStorage.setItem('courses_timestamp', Date.now().toString());
-    } catch (e) {
-        console.warn('No se pudo guardar en caché:', e);
-    }
-}
-
-function loadFromCache() {
-    try {
-        const cachedData = localStorage.getItem('courses_cache');
-        const cacheTimestamp = localStorage.getItem('courses_timestamp');
-        
-        if (cachedData && cacheTimestamp) {
-            const age = Date.now() - parseInt(cacheTimestamp);
-            
-            if (age < CACHE_DURATION) {
-                return JSON.parse(cachedData);
-            }
-        }
-    } catch (e) {
-        console.warn('Error al cargar del caché:', e);
-    }
-    return null;
-}
-
 // Modal Functions
 function initModal() {
-    // Close modal buttons
     modalClose.addEventListener('click', closeModal);
     closeModalBtn.addEventListener('click', closeModal);
     enrollBtn.addEventListener('click', () => {
-        alert('¡Inscripción exitosa! Serás redirigido al curso.');
+        alert('¡Inscripción exitosa!');
         closeModal();
     });
     
-    // Close modal when clicking outside
     courseModal.addEventListener('click', (e) => {
         if (e.target === courseModal) {
             closeModal();
         }
     });
     
-    // Close modal with Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && courseModal.style.display === 'flex') {
             closeModal();
@@ -480,17 +313,20 @@ function initModal() {
 }
 
 function openCourseModal(course) {
-    const category = categories.find(cat => cat.id === (course.category || '').toLowerCase()) || 
-                    { displayName: course.category || 'General' };
+    const title = course.titulo || course.title || 'Curso sin título';
+    const description = course.descripcion || course.description || 'Descripción no disponible';
+    const platform = course.plataforma || course.platform || 'No especificada';
+    const categoryName = course.categoria || course.category || 'General';
+    const category = categories.find(cat => cat.id === categoryName.toLowerCase()) || 
+                    { displayName: categoryName };
+    const hasCertificate = (course.certificado === 'TRUE' || course.certificate === 'TRUE');
     
-    const hasCertificate = course.certificate === true || course.certificate === 'TRUE' || course.certificate === 'Sí';
-    
-    modalCourseTitle.textContent = course.title || 'Curso sin título';
+    modalCourseTitle.textContent = title;
     modalCourseContent.innerHTML = `
         <div class="course-details">
             <div class="detail-row">
                 <div class="detail-item">
-                    <strong>Plataforma:</strong> ${course.platform || 'No especificada'}
+                    <strong>Plataforma:</strong> ${platform}
                 </div>
                 <div class="detail-item">
                     <strong>Categoría:</strong> ${category.displayName}
@@ -508,10 +344,10 @@ function openCourseModal(course) {
             <div class="course-embed">
                 <div class="text-content">
                     <h4>Descripción Completa</h4>
-                    <p>${course.description || 'Descripción no disponible'}</p>
-                    <p>Este curso incluye contenido actualizado, ejercicios prácticos, proyectos reales y soporte continuo para garantizar tu aprendizaje efectivo.</p>
+                    <p>${description}</p>
+                    <p>Este curso incluye contenido actualizado, ejercicios prácticos, proyectos reales y soporte continuo.</p>
                     ${hasCertificate ? 
-                        '<p><i class="fas fa-certificate"></i> Al completar el curso recibirás un certificado digital verificable que podrás añadir a tu currículum y perfil profesional.</p>' : 
+                        '<p><i class="fas fa-certificate"></i> Incluye certificado digital verificable.</p>' : 
                         ''
                     }
                 </div>
@@ -528,41 +364,33 @@ function closeModal() {
     document.body.style.overflow = 'auto';
 }
 
-// Admin Functions (solo lectura para Google Sheets)
+// Admin Functions (solo para ver)
 function initAdmin() {
-    // Admin access button
     adminAccessBtn.addEventListener('click', (e) => {
         e.preventDefault();
         openAdminPanel();
     });
     
-    // Login form
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const username = document.getElementById('admin-username').value;
         const password = document.getElementById('admin-password').value;
         
-        // Simple authentication (for demo purposes only)
         if (username === 'admin' && password === 'admin123') {
             loginSuccess();
         } else {
-            alert('Credenciales incorrectas. Intenta nuevamente.');
+            alert('Credenciales incorrectas. Usa admin / admin123');
         }
     });
     
-    // Cancel login
-    cancelLoginBtn.addEventListener('click', () => {
-        closeAdminPanel();
-    });
+    cancelLoginBtn.addEventListener('click', closeAdminPanel);
     
-    // Show credentials button
     showCredsBtn.addEventListener('click', () => {
         loginHint.classList.toggle('active');
         showCredsBtn.textContent = loginHint.classList.contains('active') ? 
             'Ocultar Credenciales' : 'Mostrar Credenciales';
     });
     
-    // Logout button
     logoutBtn.addEventListener('click', () => {
         adminLogin.style.display = 'block';
         adminPanel.style.display = 'none';
@@ -572,16 +400,13 @@ function initAdmin() {
         showCredsBtn.textContent = 'Mostrar Credenciales';
     });
     
-    // Admin tabs
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const tabId = btn.dataset.tab;
             
-            // Update active tab button
             tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // Show active tab content
             tabContents.forEach(content => {
                 content.classList.remove('active');
                 if (content.id === tabId) {
@@ -589,34 +414,11 @@ function initAdmin() {
                 }
             });
             
-            // Load data for specific tabs
             if (tabId === 'courses-tab') {
                 renderAdminCourses();
             }
         });
     });
-    
-    // Populate category select for new course
-    populateCategorySelect();
-    
-    // Desactivar el formulario de agregar curso (solo lectura)
-    if (addCourseForm) {
-        addCourseForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            showFormStatus('⚠️ La edición directa no está disponible. Edita los cursos directamente en Google Sheets.', 'warning');
-        });
-        
-        // Deshabilitar todos los campos del formulario
-        const formInputs = addCourseForm.querySelectorAll('input, select, textarea, button');
-        formInputs.forEach(input => {
-            input.disabled = true;
-        });
-    }
-    
-    // Branding
-    logoUrlInput.addEventListener('input', updateLogoPreview);
-    saveLogoBtn.addEventListener('click', saveLogo);
-    resetLogoBtn.addEventListener('click', resetLogo);
 }
 
 function openAdminPanel() {
@@ -633,113 +435,53 @@ function loginSuccess() {
     adminLogin.style.display = 'none';
     adminPanel.style.display = 'block';
     renderAdminCourses();
-    populateCategorySelect();
 }
 
 function renderAdminCourses() {
     adminCoursesList.innerHTML = '';
     
     courses.forEach(course => {
-        const category = categories.find(cat => cat.id === (course.category || '').toLowerCase()) || 
-                        { displayName: course.category || 'General' };
-        
-        const isActive = course.active === true || course.active === 'TRUE' || course.active === 'Sí' || course.active === undefined;
-        const hasCertificate = course.certificate === true || course.certificate === 'TRUE' || course.certificate === 'Sí';
+        const title = course.titulo || course.title || 'Curso sin título';
+        const categoryName = course.categoria || course.category || 'General';
+        const category = categories.find(cat => cat.id === categoryName.toLowerCase()) || 
+                        { displayName: categoryName };
+        const platform = course.plataforma || course.platform || 'No especificada';
+        const link = course.enlace || course.link || '#';
+        const hasCertificate = (course.certificado === 'TRUE' || course.certificate === 'TRUE');
+        const isActive = (course.activo !== 'FALSE' && course.active !== 'FALSE');
         
         const courseItem = document.createElement('div');
         courseItem.className = 'admin-course-item';
         courseItem.innerHTML = `
             <div class="admin-course-header">
-                <div class="admin-course-title">${course.title || 'Curso sin título'}</div>
+                <div class="admin-course-title">${title}</div>
                 <div class="admin-course-actions">
-                    <a href="https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit" target="_blank" class="action-btn edit">
+                    <a href="${GOOGLE_SHEETS_URL.replace('/pub?', '/edit?')}" target="_blank" class="action-btn edit">
                         Editar en Sheets
                     </a>
                 </div>
             </div>
             <div class="admin-course-details">
-                <div><strong>Categoría:</strong> <span class="category-display">${category.displayName}</span></div>
-                <div><strong>Plataforma:</strong> ${course.platform || 'No especificada'}</div>
+                <div><strong>Categoría:</strong> ${category.displayName}</div>
+                <div><strong>Plataforma:</strong> ${platform}</div>
                 <div><strong>Certificado:</strong> ${hasCertificate ? 'Sí' : 'No'}</div>
                 <div><strong>Estado:</strong> ${isActive ? 'Activo' : 'Inactivo'}</div>
-                <div><strong>Enlace:</strong> ${course.link ? `<a href="${course.link}" target="_blank">Ver curso</a>` : 'No disponible'}</div>
+                <div><strong>Enlace:</strong> <a href="${link}" target="_blank">Ver curso</a></div>
             </div>
         `;
         adminCoursesList.appendChild(courseItem);
     });
 }
 
-function populateCategorySelect() {
-    if (!newCourseCategory) return;
-    
-    newCourseCategory.innerHTML = '<option value="">Seleccionar categoría</option>';
-    
-    // Filtrar categorías que no sean "todos"
-    categories.filter(cat => cat.id !== 'todos').forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.id;
-        option.textContent = category.displayName;
-        newCourseCategory.appendChild(option);
-    });
-}
-
-// Branding Functions
-function updateLogoPreview() {
-    const url = logoUrlInput.value.trim();
-    
-    if (url) {
-        logoPreviewImg.src = url;
-        logoPreviewImg.classList.add('active');
-        defaultLogoText.style.display = 'none';
-        
-        // Handle image loading errors
-        logoPreviewImg.onerror = function() {
-            logoPreviewImg.classList.remove('active');
-            defaultLogoText.style.display = 'block';
-            defaultLogoText.textContent = 'Error al cargar la imagen';
-        };
-    } else {
-        logoPreviewImg.classList.remove('active');
-        defaultLogoText.style.display = 'block';
-        defaultLogoText.textContent = 'Logo predeterminado';
-    }
-}
-
-function saveLogo() {
-    const url = logoUrlInput.value.trim();
-    
-    if (url) {
-        // Validate URL
-        try {
-            new URL(url);
-            customLogoUrl = url;
-            localStorage.setItem('customLogoUrl', url);
-            updateHeroLogo();
-            alert('Logo guardado exitosamente en este dispositivo.');
-        } catch (e) {
-            alert('Por favor ingresa una URL válida.');
-        }
-    } else {
-        alert('Por favor ingresa una URL para el logo.');
-    }
-}
-
-function resetLogo() {
-    customLogoUrl = "";
-    localStorage.removeItem('customLogoUrl');
-    logoUrlInput.value = "";
-    updateLogoPreview();
-    updateHeroLogo();
-    alert('Logo restablecido al predeterminado.');
-}
-
 function updateHeroLogo() {
+    const heroLogoImg = document.getElementById('hero-logo-img');
+    if (!heroLogoImg) return;
+    
     if (customLogoUrl) {
         heroLogoImg.src = customLogoUrl;
         heroLogoImg.classList.add('active');
         document.querySelector('.hero-logo-default').style.display = 'none';
         
-        // Handle image loading errors
         heroLogoImg.onerror = function() {
             heroLogoImg.classList.remove('active');
             document.querySelector('.hero-logo-default').style.display = 'flex';
@@ -750,46 +492,18 @@ function updateHeroLogo() {
     }
 }
 
-function showFormStatus(message, type) {
-    if (!formStatus) return;
-    
-    formStatus.textContent = message;
-    formStatus.className = '';
-    
-    if (type === 'success') {
-        formStatus.style.color = '#4CAF50';
-    } else if (type === 'error') {
-        formStatus.style.color = '#f44336';
-    } else if (type === 'warning') {
-        formStatus.style.color = '#FFC107';
-    } else if (type === 'loading') {
-        formStatus.style.color = '#2196F3';
-    } else {
-        formStatus.style.color = '';
-    }
-}
-
-// Close admin panel with Escape key
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && adminOverlay.style.display === 'flex') {
-        closeAdminPanel();
-    }
-});
-
-// Botón para actualizar manualmente
-function addRefreshButton() {
+// Botón de actualización
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar botón de actualización
     const refreshBtn = document.createElement('button');
     refreshBtn.className = 'btn btn-small';
     refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
     refreshBtn.style.marginLeft = '10px';
+    refreshBtn.style.marginTop = '10px';
     refreshBtn.addEventListener('click', loadCoursesFromGoogleSheets);
     
-    // Agregar al header de cursos
     const sectionHeader = document.querySelector('.section-header');
     if (sectionHeader) {
         sectionHeader.appendChild(refreshBtn);
     }
-}
-
-// Agregar botón de actualización después de cargar
-setTimeout(addRefreshButton, 1000);
+});

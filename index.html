@@ -3,475 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zona Total Academy</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f0f2f5; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        
-        /* HEADER */
-        .header { background: #1a237e; color: white; padding: 15px 0; position: fixed; width: 100%; top: 0; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; }
-        .logo { display: flex; align-items: center; gap: 10px; font-size: 1.5em; font-weight: bold; }
-        .nav-menu { display: flex; list-style: none; gap: 20px; }
-        .nav-link { color: white; text-decoration: none; padding: 8px 15px; }
-        .nav-link:hover { background: rgba(255,255,255,0.1); border-radius: 5px; }
-        #admin-btn { background: #ff9800; border-radius: 5px; }
-        
-        /* HERO */
-        .hero { background: #1a237e; color: white; padding: 120px 0 60px; margin-top: 60px; text-align: center; }
-        .hero h1 { font-size: 2.5em; margin-bottom: 20px; }
-        .hero p { font-size: 1.2em; margin-bottom: 30px; opacity: 0.9; }
-        .btn { display: inline-block; padding: 12px 30px; background: #ffd700; color: #1a237e; 
-               text-decoration: none; border-radius: 25px; font-weight: bold; }
-        
-        /* COURSES */
-        .courses-section { padding: 60px 0; background: white; }
-        .section-title { text-align: center; font-size: 2em; color: #1a237e; margin-bottom: 40px; }
-        .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .course-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
-        .course-title { color: #1a237e; margin-bottom: 10px; font-size: 1.2em; }
-        .course-description { color: #666; margin-bottom: 15px; font-size: 0.95em; }
-        .view-course { background: #1a237e; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
-        
-        /* ADMIN */
-        .admin-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; padding: 20px; }
-        .admin-container { background: white; max-width: 500px; margin: 50px auto; padding: 30px; border-radius: 10px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
-        
-        /* FOOTER */
-        .footer { background: #1a237e; color: white; padding: 40px 0 20px; text-align: center; }
-    </style>
+    <title>Academia Élite - Cursos Premium</title>
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-    <!-- NOTIFICATION -->
-    <div id="notification" style="display:none; position:fixed; top:20px; right:20px; background:#28a745; color:white; padding:15px; border-radius:5px;"></div>
-    
-    <!-- HEADER -->
+    <!-- Header & Navigation -->
     <header class="header">
         <div class="container">
             <nav class="navbar">
                 <div class="logo">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span>Zona Total Academy</span>
+                    <div class="logo-icon">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <span class="logo-text">Academia Élite</span>
                 </div>
+                
                 <ul class="nav-menu">
-                    <li><a href="#home" class="nav-link">Inicio</a></li>
+                    <li><a href="#home" class="nav-link active">Inicio</a></li>
                     <li><a href="#courses" class="nav-link">Cursos</a></li>
-                    <li><a href="#" class="nav-link" id="admin-btn">Admin</a></li>
+                    <li><a href="#about" class="nav-link">Nosotros</a></li>
+                    <li><a href="#contact" class="nav-link">Contacto</a></li>
+                    <li><a href="#" id="admin-access-btn" class="nav-link admin-access">
+                        <i class="fas fa-lock"></i> Admin
+                    </a></li>
                 </ul>
+                
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
             </nav>
         </div>
     </header>
 
-    <!-- HERO -->
+    <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="container">
-            <h1>Zona Total Academy</h1>
-            <p>Cursos gratuitos con certificado - Aprende desde cualquier dispositivo</p>
-            <a href="#courses" class="btn">Ver Cursos</a>
+            <div class="hero-logo">
+                <div class="hero-logo-default">
+                    <i class="fas fa-gem"></i>
+                    <h1 class="hero-logo-text">Academia Élite</h1>
+                </div>
+                <img src="" alt="Logo personalizado" class="hero-logo-img" id="hero-logo-img">
+            </div>
+            
+            <div class="hero-content">
+                <h1 class="hero-title">Excelencia Educativa <span class="gold-gradient">Premium</span></h1>
+                <p class="hero-subtitle">Descubre nuestra colección exclusiva de cursos certificados. Domina habilidades de alto valor con instructores expertos y contenido de calidad excepcional.</p>
+                
+                <div class="hero-buttons">
+                    <a href="#courses" class="btn btn-primary">Explorar Cursos</a>
+                    <a href="#about" class="btn btn-secondary">Conocer Más</a>
+                </div>
+            </div>
+            
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number" id="total-courses">0</div>
+                    <div class="stat-text">Cursos Disponibles</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-text">Certificados</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-text">Acceso</div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- COURSES -->
+    <!-- Courses Section -->
     <section class="courses-section" id="courses">
         <div class="container">
-            <h2 class="section-title">Nuestros Cursos</h2>
-            <div id="courses-container">
-                <!-- Los cursos se cargarán aquí -->
+            <div class="section-header">
+                <h2 class="section-title">Cursos Exclusivos</h2>
+                <p class="section-subtitle">Filtra y encuentra el curso perfecto para tu crecimiento profesional</p>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-buttons" id="filter-buttons">
+                    <!-- Filters will be generated dynamically -->
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Buscar cursos...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+            
+            <!-- Courses Grid -->
+            <div class="courses-grid" id="courses-grid">
+                <!-- Courses will be loaded dynamically -->
             </div>
         </div>
     </section>
 
-    <!-- ADMIN -->
-    <div class="admin-overlay" id="admin-overlay">
-        <div class="admin-container">
-            <h2 style="color:#1a237e; margin-bottom:20px;"><i class="fas fa-lock"></i> Panel de Administración</h2>
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">¿Por Qué Elegirnos?</h2>
+                <p class="section-subtitle">Excelencia educativa sin compromisos</p>
+            </div>
             
-            <!-- LOGIN -->
-            <div id="admin-login">
-                <p style="margin-bottom:20px;">Usuario: <strong>admin</strong> | Contraseña: <strong>admin123</strong></p>
-                <div class="form-group">
-                    <label>Usuario</label>
-                    <input type="text" id="login-user" placeholder="admin">
+            <div class="about-content">
+                <div class="about-grid">
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <h3>Certificación Premium</h3>
+                        <p>Todos nuestros cursos incluyen certificados reconocidos que validan tus nuevas habilidades.</p>
+                    </div>
+                    
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h3>Instructores Expertos</h3>
+                        <p>Aprende de profesionales con años de experiencia en sus respectivas industrias.</p>
+                    </div>
+                    
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h3>Contenido Actualizado</h3>
+                        <p>Mantente a la vanguardia con material educativo constantemente renovado.</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="login-pass" placeholder="admin123">
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h3>Academia Élite</h3>
+                    <p>Excelencia educativa para profesionales exigentes. Cursos premium con certificación y contenido de alta calidad.</p>
                 </div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn" id="login-btn" style="background:#1a237e; color:white;">Ingresar</button>
-                    <button class="btn" id="cancel-admin" style="background:#666;">Cancelar</button>
+                
+                <div class="footer-info">
+                    <p><i class="fas fa-envelope"></i> contacto@academiaelite.com</p>
+                    <p><i class="fas fa-phone"></i> +1 (555) 123-4567</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Av. Premium 123, Ciudad Élite</p>
+                    <p><i class="fas fa-clock"></i> Soporte 24/7 para estudiantes</p>
                 </div>
             </div>
             
-            <!-- ADD COURSE -->
-            <div id="admin-panel" style="display:none;">
-                <h3 style="margin-bottom:20px;">Agregar Nuevo Curso</h3>
-                <form id="add-course-form">
-                    <div class="form-group">
-                        <label>Título del Curso *</label>
-                        <input type="text" id="add-title" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Categoría *</label>
-                        <input type="text" id="add-category" required placeholder="programacion">
-                    </div>
-                    <div class="form-group">
-                        <label>Descripción *</label>
-                        <textarea id="add-description" rows="3" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Código EMBED de YouTube *</label>
-                        <textarea id="add-embed" rows="4" required placeholder='<iframe src="..."></iframe>'></textarea>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <button type="submit" class="btn" style="background:#28a745;">Agregar Curso</button>
-                        <button type="button" class="btn" id="logout-btn" style="background:#666;">Salir</button>
-                    </div>
-                </form>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Academia Élite. Todos los derechos reservados.</p>
+                <p class="footer-note">Plataforma educativa premium para profesionales exigentes</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Course Modal -->
+    <div class="modal-overlay" id="course-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-course-title">Curso Detallado</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div id="modal-course-content">
+                    <!-- Course details will be loaded here -->
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="enroll-btn">Inscribirse Ahora</button>
+                    <button class="btn btn-secondary" id="close-modal-btn">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Zona Total Academy</p>
-            <p style="margin-top:10px; font-size:0.9em; opacity:0.8;">Base de datos: Google Sheets | Todos los dispositivos sincronizados</p>
-        </div>
-    </footer>
-
-    <!-- SCRIPT PRINCIPAL -->
-   <script>
-// ============================================
-// CONFIGURACIÓN - REEMPLAZA CON TU ENLACE
-// ============================================
-// OBTÉN ESTE ENLACE DE "PUBLICAR EN LA WEB"
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJpv1h9XBYo7gJPLBx4U_1IiRkf0v-y2W2Z_o-O3V67aPSqAzvBdAomO7SPy-dVSYw3cyUwD3C0oVJ/pub?output=csv';
-
-// Credenciales del admin
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123';
-
-// ============================================
-// FUNCIONES PRINCIPALES
-// ============================================
-async function cargarCursos() {
-    const container = document.getElementById('courses-container');
-    container.innerHTML = '<p style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Cargando cursos...</p>';
-    
-    try {
-        // Cargar CSV desde Google Sheets
-        const respuesta = await fetch(GOOGLE_SHEETS_URL + '&_=' + Date.now());
-        const csvText = await respuesta.text();
-        
-        // Convertir CSV a array
-        const lineas = csvText.split('\n');
-        const cursos = [];
-        
-        // Saltar encabezados (primera línea)
-        for (let i = 1; i < lineas.length; i++) {
-            const linea = lineas[i].trim();
-            if (!linea) continue;
-            
-            // Separar por comas (CSV simple)
-            const columnas = linea.split(',').map(col => col.trim());
-            
-            if (columnas.length >= 6 && columnas[1]) { // columnas[1] = título
-                const curso = {
-                    id: columnas[0] || i,
-                    title: columnas[1] || '',
-                    category: columnas[2] || 'general',
-                    description: columnas[3] || '',
-                    platform: columnas[4] || 'YouTube',
-                    embed: columnas[5] || '',
-                    image: columnas[6] || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-                    certificate: columnas[7] !== 'FALSE',
-                    created: columnas[8] || '2024-01-01'
-                };
+    <!-- Admin Panel -->
+    <div class="admin-overlay" id="admin-overlay">
+        <div class="admin-container">
+            <!-- Admin Login -->
+            <div class="admin-login" id="admin-login">
+                <div class="login-header">
+                    <h3><i class="fas fa-lock"></i> Acceso Administrativo</h3>
+                    <p>Ingresa tus credenciales para acceder al panel de administración</p>
+                </div>
                 
-                cursos.push(curso);
-            }
-        }
-        
-        // Mostrar cursos
-        mostrarCursos(cursos);
-        
-    } catch (error) {
-        console.error('Error cargando cursos:', error);
-        container.innerHTML = `
-            <div style="text-align:center; padding:40px;">
-                <i class="fas fa-exclamation-triangle" style="font-size:3em;color:#ff9800;"></i>
-                <h3 style="color:#333; margin:20px 0 10px;">No se pudieron cargar los cursos</h3>
-                <p style="color:#666;">Posibles soluciones:</p>
-                <ol style="text-align:left; max-width:500px; margin:20px auto;">
-                    <li>Ve a Google Sheets → Archivo → Compartir → Publicar en la web</li>
-                    <li>Selecciona "Publicar" y copia el enlace .csv</li>
-                    <li>Actualiza la variable GOOGLE_SHEETS_URL en el código</li>
-                </ol>
-                <button onclick="location.reload()" style="padding:10px 20px; background:#1a237e; color:white; border:none; border-radius:5px; cursor:pointer;">
-                    <i class="fas fa-redo"></i> Reintentar
-                </button>
-            </div>
-        `;
-    }
-}
-
-function mostrarCursos(cursos) {
-    const container = document.getElementById('courses-container');
-    
-    if (!cursos || cursos.length === 0) {
-        container.innerHTML = `
-            <div style="text-align:center; padding:50px;">
-                <i class="fas fa-book-open" style="font-size:3em;color:#ddd;"></i>
-                <h3 style="color:#666; margin:20px 0 10px;">No hay cursos disponibles</h3>
-                <p style="color:#999;">Agrega el primer curso desde el panel de administración</p>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '<div class="courses-grid">';
-    
-    cursos.forEach(curso => {
-        const cat = curso.category || 'general';
-        const catDisplay = cat.charAt(0).toUpperCase() + cat.slice(1);
-        
-        html += `
-            <div class="course-card" data-category="${cat}">
-                <div class="course-image" style="background-image:url('${curso.image}')"></div>
-                <div class="course-content">
-                    <h3 class="course-title">${curso.title}</h3>
-                    <p class="course-description">${curso.description}</p>
-                    <div class="course-meta">
-                        <span class="course-category">${catDisplay}</span>
-                        <span class="course-platform">${curso.platform}</span>
-                        ${curso.certificate ? '<span class="certificate-badge"><i class="fas fa-certificate"></i> Certificado</span>' : ''}
+                <form class="login-form" id="login-form">
+                    <div class="form-group">
+                        <label for="admin-username">Usuario</label>
+                        <input type="text" id="admin-username" required>
                     </div>
-                    <button class="view-course" onclick="verCurso('${curso.title.replace(/'/g, "\\'")}', '${curso.embed.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-play"></i> Ver Curso
-                    </button>
+                    
+                    <div class="form-group">
+                        <label for="admin-password">Contraseña</label>
+                        <input type="password" id="admin-password" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Ingresar</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-login-btn">Cancelar</button>
+                    </div>
+                </form>
+                
+                <div class="login-hint" id="login-hint">
+                    <p><strong>Credenciales de prueba:</strong></p>
+                    <p>Usuario: <code>admin</code></p>
+                    <p>Contraseña: <code>admin123</code></p>
+                    <p class="hint-note">Estas credenciales son solo para demostración</p>
+                </div>
+                
+                <button id="show-creds-btn" class="btn btn-small">Mostrar Credenciales</button>
+            </div>
+            
+            <!-- Admin Panel -->
+            <div class="admin-panel" id="admin-panel" style="display: none;">
+                <div class="admin-header">
+                    <h3><i class="fas fa-cogs"></i> Panel de Administración</h3>
+                    <button class="btn btn-small" id="logout-btn">Cerrar Sesión</button>
+                </div>
+                
+                <div class="admin-tabs">
+                    <button class="tab-btn active" data-tab="courses-tab">Cursos</button>
+                    <button class="tab-btn" data-tab="add-course-tab">Agregar Curso</button>
+                    <button class="tab-btn" data-tab="categories-tab">Categorías</button>
+                    <button class="tab-btn" data-tab="branding-tab">Branding</button>
+                </div>
+                
+                <!-- Courses Management Tab -->
+                <div class="tab-content active" id="courses-tab">
+                    <h4>Gestión de Cursos</h4>
+                    <div class="admin-courses-list" id="admin-courses-list">
+                        <!-- Courses will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Add Course Tab -->
+                <div class="tab-content" id="add-course-tab">
+                    <h4>Agregar Nuevo Curso</h4>
+                    <form id="add-course-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new-course-title">Título del Curso *</label>
+                                <input type="text" id="new-course-title" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-course-platform">Plataforma *</label>
+                                <select id="new-course-platform" required>
+                                    <option value="">Seleccionar plataforma</option>
+                                    <option value="Udemy">Udemy</option>
+                                    <option value="Coursera">Coursera</option>
+                                    <option value="Platzi">Platzi</option>
+                                    <option value="EdX">EdX</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new-course-category">Categoría *</label>
+                                <select id="new-course-category" required>
+                                    <!-- Categories will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-course-link">Enlace o ID *</label>
+                                <input type="text" id="new-course-link" required>
+                                <span class="form-hint">Enlace externo o ID del curso</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new-course-description">Descripción *</label>
+                            <textarea id="new-course-description" rows="4" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="new-course-certificate" checked>
+                                <label for="new-course-certificate">Incluye certificado</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Agregar Curso</button>
+                            <button type="reset" class="btn btn-secondary">Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Categories Management Tab -->
+                <div class="tab-content" id="categories-tab">
+                    <h4>Gestión de Categorías</h4>
+                    <div class="categories-management">
+                        <div class="categories-list-container">
+                            <h5>Categorías Actuales</h5>
+                            <ul class="categories-list" id="categories-list">
+                                <!-- Categories will be loaded here -->
+                            </ul>
+                        </div>
+                        
+                        <div class="add-category">
+                            <h5>Agregar Nueva Categoría</h5>
+                            <div class="form-group">
+                                <input type="text" id="new-category-input" placeholder="Nombre de la categoría">
+                                <button class="btn btn-primary" id="add-category-btn">Agregar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Branding Tab -->
+                <div class="tab-content" id="branding-tab">
+                    <h4>Personalización de Marca</h4>
+                    <div class="branding-management">
+                        <div class="form-group">
+                            <label for="logo-url">URL del Logo Personalizado</label>
+                            <input type="text" id="logo-url" placeholder="https://ejemplo.com/logo.png">
+                            <span class="form-hint">Ingresa la URL completa de la imagen del logo</span>
+                        </div>
+                        
+                        <div class="logo-preview">
+                            <h5>Vista Previa del Logo</h5>
+                            <div class="preview-container">
+                                <img id="logo-preview-img" src="" alt="Logo personalizado">
+                                <p class="preview-text" id="default-logo-text">Logo predeterminado</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button class="btn btn-primary" id="save-logo-btn">Guardar Logo</button>
+                            <button class="btn btn-secondary" id="reset-logo-btn">Restablecer Logo</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        `;
-    });
-    
-    html += '</div>';
-    container.innerHTML = html;
-}
+        </div>
+    </div>
 
-function verCurso(titulo, embed) {
-    const ventana = window.open('', '_blank', 'width=800,height=600');
-    ventana.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>${titulo} - Zona Total Academy</title>
-            <style>
-                body { margin:0; padding:20px; background:#f0f2f5; font-family:Arial, sans-serif; }
-                .container { max-width:800px; margin:0 auto; }
-                h1 { color:#1a237e; margin-bottom:20px; }
-                .video-container { position:relative; padding-bottom:56.25%; height:0; margin:20px 0; }
-                .video-container iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
-                button { padding:10px 20px; background:#1a237e; color:white; border:none; border-radius:5px; cursor:pointer; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>${titulo}</h1>
-                <div class="video-container">${embed}</div>
-                <button onclick="window.close()"><i class="fas fa-times"></i> Cerrar</button>
-            </div>
-        </body>
-        </html>
-    `);
-}
-
-function mostrarNotificacion(mensaje, tipo = 'success') {
-    // Crear notificación si no existe
-    let noti = document.getElementById('notification');
-    if (!noti) {
-        noti = document.createElement('div');
-        noti.id = 'notification';
-        noti.style.cssText = 'position:fixed; top:20px; right:20px; padding:15px 20px; color:white; border-radius:5px; z-index:9999; display:none;';
-        document.body.appendChild(noti);
-    }
-    
-    noti.textContent = mensaje;
-    noti.style.background = tipo === 'error' ? '#dc3545' : tipo === 'warning' ? '#ff9800' : '#28a745';
-    noti.style.display = 'block';
-    
-    setTimeout(() => {
-        noti.style.display = 'none';
-    }, 3000);
-}
-
-// ============================================
-// ADMINISTRACIÓN
-// ============================================
-function abrirGoogleSheets() {
-    // Obtener valores del formulario
-    const titulo = document.getElementById('add-title').value.trim();
-    const categoria = document.getElementById('add-category').value.trim();
-    const descripcion = document.getElementById('add-description').value.trim();
-    const embed = document.getElementById('add-embed').value.trim();
-    
-    if (!titulo || !categoria || !descripcion || !embed) {
-        mostrarNotificacion('Completa todos los campos requeridos', 'error');
-        return;
-    }
-    
-    // Crear datos para Google Sheets
-    const datos = [
-        Date.now(), // id
-        titulo,
-        categoria,
-        descripcion,
-        'YouTube', // platform
-        embed,
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-        'TRUE', // certificate
-        new Date().toISOString().split('T')[0] // fecha
-    ];
-    
-    // Abrir Google Sheets con instrucciones
-    const url = GOOGLE_SHEETS_URL.replace('/pub?output=csv', '/edit#gid=0');
-    const ventana = window.open(url, '_blank');
-    
-    // Mostrar instrucciones
-    mostrarNotificacion('Se abrió Google Sheets. Agrega estos datos en una nueva fila:', 'info');
-    
-    // Mostrar datos en la página
-    setTimeout(() => {
-        const instrucciones = document.createElement('div');
-        instrucciones.style.cssText = 'position:fixed; bottom:20px; right:20px; background:white; padding:20px; border-radius:10px; box-shadow:0 5px 20px rgba(0,0,0,0.2); z-index:9998; max-width:400px;';
-        instrucciones.innerHTML = `
-            <h3 style="margin-top:0; color:#1a237e;">Instrucciones:</h3>
-            <p>1. Ve a Google Sheets (se abrió en otra pestaña)</p>
-            <p>2. Agrega una NUEVA FILA al final</p>
-            <p>3. Copia estos datos (una columna cada uno):</p>
-            <div style="background:#f8f9fa; padding:15px; border-radius:5px; margin:10px 0; font-family:monospace; font-size:12px;">
-                ${datos.map((d, i) => `<div>Columna ${String.fromCharCode(65 + i)}: ${d}</div>`).join('')}
-            </div>
-            <button onclick="this.parentElement.remove()" style="padding:8px 15px; background:#666; color:white; border:none; border-radius:5px; cursor:pointer;">
-                Cerrar instrucciones
-            </button>
-        `;
-        document.body.appendChild(instrucciones);
-    }, 1000);
-    
-    // Limpiar formulario
-    document.getElementById('add-course-form').reset();
-}
-
-// ============================================
-// EVENTOS Y CONFIGURACIÓN
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {
-    // Cargar cursos al inicio
-    cargarCursos();
-    
-    // Configurar hamburger menu
-    const hamburger = document.querySelector('.hamburger');
-    const navMenu = document.querySelector('.nav-menu');
-    
-    if (hamburger) {
-        hamburger.addEventListener('click', function() {
-            navMenu.classList.toggle('active');
-        });
-    }
-    
-    // Botón Admin
-    document.getElementById('admin-btn').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('admin-overlay').style.display = 'block';
-    });
-    
-    // Cancelar Admin
-    document.getElementById('cancel-admin').addEventListener('click', function() {
-        document.getElementById('admin-overlay').style.display = 'none';
-        document.getElementById('login-user').value = '';
-        document.getElementById('login-pass').value = '';
-    });
-    
-    // Login
-    document.getElementById('login-btn').addEventListener('click', function() {
-        const user = document.getElementById('login-user').value;
-        const pass = document.getElementById('login-pass').value;
-        
-        if (user === ADMIN_USER && pass === ADMIN_PASS) {
-            document.getElementById('admin-login').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'block';
-            mostrarNotificacion('Sesión iniciada correctamente', 'success');
-        } else {
-            mostrarNotificacion('Credenciales incorrectas', 'error');
-        }
-    });
-    
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', function() {
-        document.getElementById('admin-panel').style.display = 'none';
-        document.getElementById('admin-login').style.display = 'block';
-        document.getElementById('admin-overlay').style.display = 'none';
-        document.getElementById('login-user').value = '';
-        document.getElementById('login-pass').value = '';
-        mostrarNotificacion('Sesión cerrada', 'info');
-    });
-    
-    // Formulario agregar curso
-    document.getElementById('add-course-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        abrirGoogleSheets();
-    });
-    
-    // Buscador
-    const buscador = document.getElementById('course-search');
-    if (buscador) {
-        buscador.addEventListener('input', function(e) {
-            const termino = e.target.value.toLowerCase().trim();
-            const cursos = document.querySelectorAll('.course-card');
-            
-            cursos.forEach(curso => {
-                const titulo = curso.querySelector('.course-title').textContent.toLowerCase();
-                const desc = curso.querySelector('.course-description').textContent.toLowerCase();
-                
-                if (titulo.includes(termino) || desc.includes(termino)) {
-                    curso.style.display = 'block';
-                } else {
-                    curso.style.display = 'none';
-                }
-            });
-        });
-    }
-    
-    // Cerrar admin al hacer clic fuera
-    document.getElementById('admin-overlay').addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-            document.getElementById('login-user').value = '';
-            document.getElementById('login-pass').value = '';
-        }
-    });
-    
-    // Info de versión
-    const ahora = new Date();
-    const info = document.getElementById('version-info');
-    if (info) {
-        info.textContent = `Sincronizado con Google Sheets | ${ahora.toLocaleDateString()}`;
-    }
-    
-    console.log('✅ Zona Total Academy - Sistema cargado');
-});
-
-// Función para recargar manualmente
-window.recargarCursos = function() {
-    cargarCursos();
-    mostrarNotificacion('Cursos recargados', 'success');
-};
-</script>
+    <script src="script.js"></script>
 </body>
 </html>

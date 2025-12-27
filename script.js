@@ -1,5 +1,10 @@
-// Configuración de Google Apps Script
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzTeLc349OqIzE2fEO-eGLcPf8LbFlnXwfHi7CNQimjZFzDsUNRY6-75ehjKcR2AO9/exec';
+// Configuración de Google Sheets API
+const GOOGLE_SHEET_ID = '1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ'; // <-- REEMPLAZA CON TU ID
+const API_KEY = 'TU_API_KEY_AQUI'; // <-- OPCIONAL: Para más seguridad
+const SHEET_NAME = 'Cursos'; // Nombre de la hoja
+
+// URL base para la API de Google Sheets
+const SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_NAME}`;
 
 // Variables globales
 let courses = [];
@@ -10,7 +15,7 @@ let currentCategory = "todos";
 let searchQuery = "";
 let customLogoUrl = localStorage.getItem('customLogoUrl') || "";
 
-// DOM Elements
+// DOM Elements (los mismos que antes)
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const coursesGrid = document.getElementById('courses-grid');
@@ -37,9 +42,6 @@ const tabContents = document.querySelectorAll('.tab-content');
 const adminCoursesList = document.getElementById('admin-courses-list');
 const addCourseForm = document.getElementById('add-course-form');
 const newCourseCategory = document.getElementById('new-course-category');
-const categoriesList = document.getElementById('categories-list');
-const newCategoryInput = document.getElementById('new-category-input');
-const addCategoryBtn = document.getElementById('add-category-btn');
 const logoUrlInput = document.getElementById('logo-url');
 const logoPreviewImg = document.getElementById('logo-preview-img');
 const defaultLogoText = document.getElementById('default-logo-text');
@@ -52,6 +54,9 @@ const errorMessage = document.getElementById('error-message');
 const retryLoadBtn = document.getElementById('retry-load-btn');
 const formStatus = document.getElementById('form-status');
 
+// Cache settings
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     initNavigation();
@@ -61,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateLogoPreview();
     updateHeroLogo();
     
-    // Cargar datos iniciales desde Google Sheets
+    // Cargar cursos desde Google Sheets
     loadCoursesFromGoogleSheets();
     
     // Setup retry button
@@ -70,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Navigation
+// Navigation (igual que antes)
 function initNavigation() {
     // Mobile menu toggle
     hamburger.addEventListener('click', () => {
@@ -147,14 +152,22 @@ function initFilters() {
     });
 }
 
-// Funciones para Google Sheets
+// Función principal para cargar desde Google Sheets
 async function loadCoursesFromGoogleSheets() {
     try {
         // Mostrar estado de carga
         showLoading(true);
         hideError();
         
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getCourses`);
+        // Construir URL con parámetros
+        let url = `${SHEETS_API_URL}?valueRenderOption=FORMATTED_VALUE`;
+        
+        // Añadir API key si está configurada
+        if (API_KEY && API_KEY !== 'TU_API_KEY_AQUI') {
+            url += `&key=${API_KEY}`;
+        }
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status}`);
@@ -162,10 +175,11 @@ async function loadCoursesFromGoogleSheets() {
         
         const data = await response.json();
         
-        if (data.success) {
-            courses = data.courses;
+        if (data.values && data.values.length > 0) {
+            // Convertir datos de Google Sheets a nuestro formato
+            courses = parseSheetData(data.values);
             
-            // Extraer categorías únicas de los cursos
+            // Actualizar categorías
             updateCategoriesFromCourses();
             
             // Actualizar filtros
@@ -175,21 +189,71 @@ async function loadCoursesFromGoogleSheets() {
             renderCourses();
             
             // Actualizar contador
-            totalCoursesElement.textContent = courses.filter(course => course.active).length;
+            updateCourseCount();
             
-            // Si estamos en el panel admin, actualizar la lista
-            if (adminPanel.style.display === 'block') {
-                renderAdminCourses();
-            }
+            // Guardar en caché
+            saveToCache();
+            
         } else {
-            throw new Error(data.message || 'Error al cargar los cursos');
+            throw new Error('No se encontraron datos en la hoja');
         }
+        
     } catch (error) {
         console.error('Error al cargar cursos:', error);
-        showError(`No se pudieron cargar los cursos: ${error.message}. Asegúrate de que el Google Apps Script esté configurado correctamente.`);
+        
+        // Intentar cargar del caché
+        const cached = loadFromCache();
+        if (cached) {
+            courses = cached;
+            updateCategoriesFromCourses();
+            updateFilterButtons();
+            renderCourses();
+            updateCourseCount();
+            showError('Usando datos cacheados. ' + error.message);
+        } else {
+            showError(`No se pudieron cargar los cursos: ${error.message}. Verifica que la hoja sea pública.`);
+        }
     } finally {
         showLoading(false);
     }
+}
+
+// Parsear datos de Google Sheets
+function parseSheetData(sheetData) {
+    const headers = sheetData[0];
+    const rows = sheetData.slice(1);
+    
+    return rows.map((row, index) => {
+        const course = {
+            id: index + 1
+        };
+        
+        // Mapear columnas según estructura esperada
+        headers.forEach((header, i) => {
+            const key = header.toLowerCase().trim();
+            let value = row[i] || '';
+            
+            // Convertir valores booleanos
+            if (key === 'certificado' || key === 'certificate') {
+                value = value.toString().toUpperCase() === 'TRUE' || value === true || value === 'Sí';
+            }
+            
+            if (key === 'activo' || key === 'active') {
+                value = value.toString().toUpperCase() === 'TRUE' || value === true || value === 'Sí';
+            }
+            
+            course[key] = value;
+        });
+        
+        // Asegurar campos requeridos
+        if (!course.title && row[0]) course.title = row[0];
+        if (!course.description && row[1]) course.description = row[1];
+        if (!course.category && row[2]) course.category = row[2];
+        if (!course.platform && row[3]) course.platform = row[3];
+        if (!course.link && row[4]) course.link = row[4];
+        
+        return course;
+    }).filter(course => course.title); // Filtrar filas vacías
 }
 
 function updateCategoriesFromCourses() {
@@ -198,7 +262,7 @@ function updateCategoriesFromCourses() {
     
     // Agregar nuevas categorías a la lista
     uniqueCategories.forEach(catName => {
-        if (!categories.find(cat => cat.id === catName.toLowerCase())) {
+        if (catName && !categories.find(cat => cat.id === catName.toLowerCase())) {
             const displayName = catName.charAt(0).toUpperCase() + catName.slice(1);
             categories.push({
                 id: catName.toLowerCase(),
@@ -240,26 +304,28 @@ function renderCourses() {
     coursesGrid.innerHTML = '';
     
     // Filter courses based on category and search
-    let filteredCourses = courses.filter(course => course.active === 'TRUE' || course.active === true);
+    let filteredCourses = courses.filter(course => 
+        course.active === true || course.active === 'TRUE' || course.active === 'Sí' || course.active === undefined
+    );
     
     if (currentCategory !== 'todos') {
         filteredCourses = filteredCourses.filter(course => 
-            course.category.toLowerCase() === currentCategory
+            course.category && course.category.toLowerCase() === currentCategory
         );
     }
     
     if (searchQuery) {
         filteredCourses = filteredCourses.filter(course => 
-            course.title.toLowerCase().includes(searchQuery) ||
-            course.description.toLowerCase().includes(searchQuery) ||
-            course.platform.toLowerCase().includes(searchQuery)
+            (course.title && course.title.toLowerCase().includes(searchQuery)) ||
+            (course.description && course.description.toLowerCase().includes(searchQuery)) ||
+            (course.platform && course.platform.toLowerCase().includes(searchQuery))
         );
     }
     
     // Render course cards
     filteredCourses.forEach(course => {
-        const category = categories.find(cat => cat.id === course.category.toLowerCase()) || 
-                        { displayName: course.category };
+        const category = categories.find(cat => cat.id === (course.category || '').toLowerCase()) || 
+                        { displayName: course.category || 'General' };
         const courseCard = createCourseCard(course, category);
         coursesGrid.appendChild(courseCard);
     });
@@ -282,30 +348,38 @@ function renderCourses() {
 function createCourseCard(course, category) {
     const courseCard = document.createElement('div');
     courseCard.className = 'course-card';
+    
+    const hasCertificate = course.certificate === true || course.certificate === 'TRUE' || course.certificate === 'Sí';
+    
     courseCard.innerHTML = `
         <div class="course-image">
             <i class="fas fa-laptop-code"></i>
         </div>
         <div class="course-content">
             <div class="course-header">
-                <h3 class="course-title">${course.title}</h3>
-                ${course.certificate === 'TRUE' || course.certificate === true ? 
+                <h3 class="course-title">${course.title || 'Curso sin título'}</h3>
+                ${hasCertificate ? 
                     '<div class="certificate-badge"><i class="fas fa-certificate"></i> Certificado</div>' : 
                     ''
                 }
             </div>
-            <p class="course-description">${course.description}</p>
+            <p class="course-description">${course.description || 'Descripción no disponible'}</p>
             <div class="course-meta">
                 <span class="course-category">${category.displayName}</span>
-                <span class="course-platform">${course.platform}</span>
+                <span class="course-platform">${course.platform || 'Plataforma no especificada'}</span>
             </div>
             <div class="course-actions">
                 <button class="btn btn-small btn-primary view-course-btn" data-id="${course.id}">
                     Ver Detalles
                 </button>
-                <a href="${course.link}" target="_blank" class="btn btn-small btn-secondary">
-                    Ir al Curso
-                </a>
+                ${course.link ? 
+                    `<a href="${course.link}" target="_blank" class="btn btn-small btn-secondary">
+                        Ir al Curso
+                    </a>` : 
+                    `<button class="btn btn-small btn-secondary" disabled>
+                        Sin enlace
+                    </button>`
+                }
             </div>
         </div>
     `;
@@ -343,6 +417,43 @@ function hideError() {
     }
 }
 
+function updateCourseCount() {
+    if (totalCoursesElement) {
+        const activeCourses = courses.filter(course => 
+            course.active === true || course.active === 'TRUE' || course.active === 'Sí' || course.active === undefined
+        ).length;
+        totalCoursesElement.textContent = activeCourses;
+    }
+}
+
+// Sistema de caché
+function saveToCache() {
+    try {
+        localStorage.setItem('courses_cache', JSON.stringify(courses));
+        localStorage.setItem('courses_timestamp', Date.now().toString());
+    } catch (e) {
+        console.warn('No se pudo guardar en caché:', e);
+    }
+}
+
+function loadFromCache() {
+    try {
+        const cachedData = localStorage.getItem('courses_cache');
+        const cacheTimestamp = localStorage.getItem('courses_timestamp');
+        
+        if (cachedData && cacheTimestamp) {
+            const age = Date.now() - parseInt(cacheTimestamp);
+            
+            if (age < CACHE_DURATION) {
+                return JSON.parse(cachedData);
+            }
+        }
+    } catch (e) {
+        console.warn('Error al cargar del caché:', e);
+    }
+    return null;
+}
+
 // Modal Functions
 function initModal() {
     // Close modal buttons
@@ -369,15 +480,17 @@ function initModal() {
 }
 
 function openCourseModal(course) {
-    const category = categories.find(cat => cat.id === course.category.toLowerCase()) || 
-                    { displayName: course.category };
+    const category = categories.find(cat => cat.id === (course.category || '').toLowerCase()) || 
+                    { displayName: course.category || 'General' };
     
-    modalCourseTitle.textContent = course.title;
+    const hasCertificate = course.certificate === true || course.certificate === 'TRUE' || course.certificate === 'Sí';
+    
+    modalCourseTitle.textContent = course.title || 'Curso sin título';
     modalCourseContent.innerHTML = `
         <div class="course-details">
             <div class="detail-row">
                 <div class="detail-item">
-                    <strong>Plataforma:</strong> ${course.platform}
+                    <strong>Plataforma:</strong> ${course.platform || 'No especificada'}
                 </div>
                 <div class="detail-item">
                     <strong>Categoría:</strong> ${category.displayName}
@@ -385,7 +498,7 @@ function openCourseModal(course) {
             </div>
             <div class="detail-row">
                 <div class="detail-item">
-                    <strong>Certificado:</strong> ${(course.certificate === 'TRUE' || course.certificate === true) ? 'Sí incluido' : 'No incluido'}
+                    <strong>Certificado:</strong> ${hasCertificate ? 'Sí incluido' : 'No incluido'}
                 </div>
                 <div class="detail-item">
                     <strong>Acceso:</strong> 24/7 desde cualquier dispositivo
@@ -395,9 +508,9 @@ function openCourseModal(course) {
             <div class="course-embed">
                 <div class="text-content">
                     <h4>Descripción Completa</h4>
-                    <p>${course.description}</p>
+                    <p>${course.description || 'Descripción no disponible'}</p>
                     <p>Este curso incluye contenido actualizado, ejercicios prácticos, proyectos reales y soporte continuo para garantizar tu aprendizaje efectivo.</p>
-                    ${(course.certificate === 'TRUE' || course.certificate === true) ? 
+                    ${hasCertificate ? 
                         '<p><i class="fas fa-certificate"></i> Al completar el curso recibirás un certificado digital verificable que podrás añadir a tu currículum y perfil profesional.</p>' : 
                         ''
                     }
@@ -415,7 +528,7 @@ function closeModal() {
     document.body.style.overflow = 'auto';
 }
 
-// Admin Functions
+// Admin Functions (solo lectura para Google Sheets)
 function initAdmin() {
     // Admin access button
     adminAccessBtn.addEventListener('click', (e) => {
@@ -486,11 +599,19 @@ function initAdmin() {
     // Populate category select for new course
     populateCategorySelect();
     
-    // Add course form
-    addCourseForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await addNewCourseToGoogleSheets();
-    });
+    // Desactivar el formulario de agregar curso (solo lectura)
+    if (addCourseForm) {
+        addCourseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showFormStatus('⚠️ La edición directa no está disponible. Edita los cursos directamente en Google Sheets.', 'warning');
+        });
+        
+        // Deshabilitar todos los campos del formulario
+        const formInputs = addCourseForm.querySelectorAll('input, select, textarea, button');
+        formInputs.forEach(input => {
+            input.disabled = true;
+        });
+    }
     
     // Branding
     logoUrlInput.addEventListener('input', updateLogoPreview);
@@ -519,22 +640,156 @@ function renderAdminCourses() {
     adminCoursesList.innerHTML = '';
     
     courses.forEach(course => {
-        const category = categories.find(cat => cat.id === course.category.toLowerCase()) || 
-                        { displayName: course.category };
+        const category = categories.find(cat => cat.id === (course.category || '').toLowerCase()) || 
+                        { displayName: course.category || 'General' };
+        
+        const isActive = course.active === true || course.active === 'TRUE' || course.active === 'Sí' || course.active === undefined;
+        const hasCertificate = course.certificate === true || course.certificate === 'TRUE' || course.certificate === 'Sí';
+        
         const courseItem = document.createElement('div');
         courseItem.className = 'admin-course-item';
         courseItem.innerHTML = `
             <div class="admin-course-header">
-                <div class="admin-course-title">${course.title}</div>
+                <div class="admin-course-title">${course.title || 'Curso sin título'}</div>
                 <div class="admin-course-actions">
-                    <button class="action-btn view" data-id="${course.id}">
-                        Ver
-                    </button>
-                    <button class="action-btn delete" data-id="${course.id}">Eliminar</button>
+                    <a href="https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit" target="_blank" class="action-btn edit">
+                        Editar en Sheets
+                    </a>
                 </div>
             </div>
             <div class="admin-course-details">
                 <div><strong>Categoría:</strong> <span class="category-display">${category.displayName}</span></div>
-                <div><strong>Plataforma:</strong> ${course.platform}</div>
-                <div><strong>Certificado:</strong> ${(course.certificate === 'TRUE' || course.certificate === true) ? 'Sí' : 'No'}</div>
-                <div><strong>Estado:</strong> ${(course.active
+                <div><strong>Plataforma:</strong> ${course.platform || 'No especificada'}</div>
+                <div><strong>Certificado:</strong> ${hasCertificate ? 'Sí' : 'No'}</div>
+                <div><strong>Estado:</strong> ${isActive ? 'Activo' : 'Inactivo'}</div>
+                <div><strong>Enlace:</strong> ${course.link ? `<a href="${course.link}" target="_blank">Ver curso</a>` : 'No disponible'}</div>
+            </div>
+        `;
+        adminCoursesList.appendChild(courseItem);
+    });
+}
+
+function populateCategorySelect() {
+    if (!newCourseCategory) return;
+    
+    newCourseCategory.innerHTML = '<option value="">Seleccionar categoría</option>';
+    
+    // Filtrar categorías que no sean "todos"
+    categories.filter(cat => cat.id !== 'todos').forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.displayName;
+        newCourseCategory.appendChild(option);
+    });
+}
+
+// Branding Functions
+function updateLogoPreview() {
+    const url = logoUrlInput.value.trim();
+    
+    if (url) {
+        logoPreviewImg.src = url;
+        logoPreviewImg.classList.add('active');
+        defaultLogoText.style.display = 'none';
+        
+        // Handle image loading errors
+        logoPreviewImg.onerror = function() {
+            logoPreviewImg.classList.remove('active');
+            defaultLogoText.style.display = 'block';
+            defaultLogoText.textContent = 'Error al cargar la imagen';
+        };
+    } else {
+        logoPreviewImg.classList.remove('active');
+        defaultLogoText.style.display = 'block';
+        defaultLogoText.textContent = 'Logo predeterminado';
+    }
+}
+
+function saveLogo() {
+    const url = logoUrlInput.value.trim();
+    
+    if (url) {
+        // Validate URL
+        try {
+            new URL(url);
+            customLogoUrl = url;
+            localStorage.setItem('customLogoUrl', url);
+            updateHeroLogo();
+            alert('Logo guardado exitosamente en este dispositivo.');
+        } catch (e) {
+            alert('Por favor ingresa una URL válida.');
+        }
+    } else {
+        alert('Por favor ingresa una URL para el logo.');
+    }
+}
+
+function resetLogo() {
+    customLogoUrl = "";
+    localStorage.removeItem('customLogoUrl');
+    logoUrlInput.value = "";
+    updateLogoPreview();
+    updateHeroLogo();
+    alert('Logo restablecido al predeterminado.');
+}
+
+function updateHeroLogo() {
+    if (customLogoUrl) {
+        heroLogoImg.src = customLogoUrl;
+        heroLogoImg.classList.add('active');
+        document.querySelector('.hero-logo-default').style.display = 'none';
+        
+        // Handle image loading errors
+        heroLogoImg.onerror = function() {
+            heroLogoImg.classList.remove('active');
+            document.querySelector('.hero-logo-default').style.display = 'flex';
+        };
+    } else {
+        heroLogoImg.classList.remove('active');
+        document.querySelector('.hero-logo-default').style.display = 'flex';
+    }
+}
+
+function showFormStatus(message, type) {
+    if (!formStatus) return;
+    
+    formStatus.textContent = message;
+    formStatus.className = '';
+    
+    if (type === 'success') {
+        formStatus.style.color = '#4CAF50';
+    } else if (type === 'error') {
+        formStatus.style.color = '#f44336';
+    } else if (type === 'warning') {
+        formStatus.style.color = '#FFC107';
+    } else if (type === 'loading') {
+        formStatus.style.color = '#2196F3';
+    } else {
+        formStatus.style.color = '';
+    }
+}
+
+// Close admin panel with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && adminOverlay.style.display === 'flex') {
+        closeAdminPanel();
+    }
+});
+
+// Botón para actualizar manualmente
+function addRefreshButton() {
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className = 'btn btn-small';
+    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
+    refreshBtn.style.marginLeft = '10px';
+    refreshBtn.addEventListener('click', loadCoursesFromGoogleSheets);
+    
+    // Agregar al header de cursos
+    const sectionHeader = document.querySelector('.section-header');
+    if (sectionHeader) {
+        sectionHeader.appendChild(refreshBtn);
+    }
+}
+
+// Agregar botón de actualización después de cargar
+setTimeout(addRefreshButton, 1000);

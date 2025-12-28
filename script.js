@@ -1,7 +1,7 @@
 // CONFIGURACIÓN
 const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ/edit?gid=0#gid=0';
 
-// CURSOS CON VIDEO REAL DENTRO DE LA WEB
+// CURSOS CON VIDEO REAL DENTRO DE LA WEB Y PORTADAS
 let courses = [
     {
         id: 1,
@@ -9,7 +9,8 @@ let courses = [
         description: "Curso completo de React con proyectos reales. Aprende Hooks, Context API, Redux, Testing y despliegue profesional.",
         category: "Programación",
         platform: "YouTube",
-        videoId: "Ke90Tje7VS0", // ID del video de YouTube
+        videoId: "Ke90Tje7VS0",
+        thumbnail: "https://img.youtube.com/vi/Ke90Tje7VS0/maxresdefault.jpg", // PORTADA DE YOUTUBE
         duration: "15 horas",
         level: "Avanzado",
         certificate: true,
@@ -22,7 +23,21 @@ let courses = [
         category: "Programación", 
         platform: "YouTube",
         videoId: "2SetvwBV-SU",
+        thumbnail: "https://img.youtube.com/vi/2SetvwBV-SU/maxresdefault.jpg", // PORTADA DE YOUTUBE
         duration: "10 horas",
+        level: "Intermedio",
+        certificate: true,
+        active: true
+    },
+    {
+        id: 3,
+        title: "Node.js Backend Profesional",
+        description: "Desarrollo backend con Node.js, Express, MongoDB y autenticación JWT.",
+        category: "Backend",
+        platform: "YouTube",
+        videoId: "1hpc70_OoAg",
+        thumbnail: "https://img.youtube.com/vi/1hpc70_OoAg/maxresdefault.jpg", // PORTADA DE YOUTUBE
+        duration: "12 horas",
         level: "Intermedio",
         certificate: true,
         active: true

@@ -1,25 +1,27 @@
-// CONFIGURACIÓN SIMPLE
-const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJpv1h9XBYo7gJPLBx4U_1IiRkf0v-y2W2Z_o-O3V67aPSqAzvBdAomO7SPy-dVSYw3cyUwD3C0oVJ/pub?output=csv'; // Cambia esto por tu URL real
+// CONFIGURACIÓN
+const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ/edit?gid=0#gid=0';
 
-// Datos iniciales (siempre visibles)
+// Datos de ejemplo CON EMBED
 let courses = [
     {
         id: 1,
-        title: "React JS - Curso Ejemplo",
-        description: "Este es un curso de ejemplo. Configura tu Google Sheets para ver tus cursos.",
+        title: "React Avanzado - Curso Completo",
+        description: "Aprende React con Hooks, Context API, Redux y despliegue. Incluye proyectos reales.",
         category: "Programación",
-        platform: "Udemy",
-        link: "#",
+        platform: "YouTube",
+        link: "https://www.youtube.com/embed/Ke90Tje7VS0",
+        embed: '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;border-radius:8px;"><iframe src="https://www.youtube.com/embed/Ke90Tje7VS0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="Curso React Avanzado"></iframe></div>',
         certificate: true,
         active: true
     },
     {
         id: 2,
-        title: "Marketing Digital",
-        description: "Curso de marketing digital básico.",
-        category: "Marketing",
-        platform: "Coursera",
-        link: "#",
+        title: "JavaScript Moderno ES6+",
+        description: "Domina JavaScript moderno con todas las nuevas características.",
+        category: "Programación", 
+        platform: "YouTube",
+        link: "https://www.youtube.com/embed/f4fB9Xg2JEY",
+        embed: '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;border-radius:8px;"><iframe src="https://www.youtube.com/embed/f4fB9Xg2JEY" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen title="Curso JavaScript"></iframe></div>',
         certificate: true,
         active: true
     }
@@ -50,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Configurar búsqueda
+    // Búsqueda
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -59,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Configurar modal
+    // Modal
     const modalClose = document.getElementById('modal-close');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const courseModal = document.getElementById('course-modal');
@@ -73,16 +75,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Configurar admin
+    // Admin
     setupAdmin();
     
-    // Cargar y mostrar cursos
+    // Cursos
     updateCategories();
     renderFilters();
     renderCourses();
     updateCourseCount();
     
-    // Intentar cargar de Google Sheets
+    // Google Sheets
     if (GOOGLE_SHEETS_CSV_URL && !GOOGLE_SHEETS_CSV_URL.includes('TU_URL')) {
         loadFromGoogleSheets();
     }
@@ -91,32 +93,42 @@ document.addEventListener('DOMContentLoaded', function() {
 // ==================== GOOGLE SHEETS ====================
 async function loadFromGoogleSheets() {
     try {
-        console.log('Intentando cargar desde Google Sheets...');
         const response = await fetch(GOOGLE_SHEETS_CSV_URL);
         const text = await response.text();
         const lines = text.split('\n').filter(line => line.trim() !== '');
         
         if (lines.length > 1) {
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
             const newCourses = [];
+            
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',');
-                if (values[0]) {
-                    newCourses.push({
-                        id: i,
-                        title: values[0].trim(),
-                        description: values[1] ? values[1].trim() : 'Sin descripción',
-                        category: values[2] ? values[2].trim() : 'General',
-                        platform: values[3] ? values[3].trim() : 'No especificada',
-                        link: values[4] ? values[4].trim() : '#',
-                        certificate: values[5] ? (values[5].toLowerCase() === 'true') : false,
-                        active: values[6] ? (values[6].toLowerCase() !== 'false') : true
-                    });
+                const course = { id: i };
+                
+                // Mapear todas las columnas
+                headers.forEach((header, index) => {
+                    if (values[index]) {
+                        course[header] = values[index].trim();
+                    }
+                });
+                
+                // Asegurar campos
+                if (!course.title && course.titulo) course.title = course.titulo;
+                if (!course.embed && course.enlace) {
+                    // Si es enlace de YouTube, crear embed automáticamente
+                    if (course.enlace.includes('youtube.com') || course.enlace.includes('youtu.be')) {
+                        const videoId = extractYouTubeId(course.enlace);
+                        if (videoId) {
+                            course.embed = createYouTubeEmbed(videoId);
+                        }
+                    }
                 }
+                
+                if (course.title) newCourses.push(course);
             }
             
             if (newCourses.length > 0) {
                 courses = newCourses;
-                console.log('Cursos cargados desde Google Sheets:', courses.length);
                 updateCategories();
                 renderFilters();
                 renderCourses();
@@ -124,13 +136,29 @@ async function loadFromGoogleSheets() {
             }
         }
     } catch (error) {
-        console.log('Google Sheets no disponible, usando datos locales');
+        console.log('Usando datos locales');
     }
 }
 
-// ==================== RENDERIZAR CURSOS ====================
+function extractYouTubeId(url) {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+    return match ? match[1] : null;
+}
+
+function createYouTubeEmbed(videoId) {
+    return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;border-radius:8px;background:#000;">
+        <iframe src="https://www.youtube.com/embed/${videoId}" 
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen 
+                title="Video del curso">
+        </iframe>
+    </div>`;
+}
+
+// ==================== RENDER CURSOS ====================
 function updateCategories() {
-    const uniqueCats = new Set(courses.map(c => c.category));
+    const uniqueCats = new Set(courses.map(c => c.category || c.categoria || 'General'));
     categories = [{ id: "todos", name: "Todos", displayName: "Todos" }];
     
     uniqueCats.forEach(cat => {
@@ -164,20 +192,26 @@ function renderCourses() {
     const grid = document.getElementById('courses-grid');
     if (!grid) return;
     
-    let filtered = courses.filter(c => c.active !== false);
+    let filtered = courses.filter(c => c.active !== false && c.active !== 'false');
     
     if (currentCategory !== 'todos') {
-        filtered = filtered.filter(c => 
-            c.category.toLowerCase().replace(/ /g, '-') === currentCategory
-        );
+        filtered = filtered.filter(c => {
+            const cat = (c.category || c.categoria || 'General').toLowerCase().replace(/ /g, '-');
+            return cat === currentCategory;
+        });
     }
     
     if (searchQuery) {
-        filtered = filtered.filter(c => 
-            c.title.toLowerCase().includes(searchQuery) ||
-            c.description.toLowerCase().includes(searchQuery) ||
-            c.category.toLowerCase().includes(searchQuery)
-        );
+        filtered = filtered.filter(c => {
+            const searchText = [
+                c.title || '',
+                c.description || c.descripcion || '',
+                c.category || c.categoria || '',
+                c.platform || c.plataforma || ''
+            ].join(' ').toLowerCase();
+            
+            return searchText.includes(searchQuery);
+        });
     }
     
     grid.innerHTML = '';
@@ -186,8 +220,8 @@ function renderCourses() {
         grid.innerHTML = `
             <div style="grid-column:1/-1;text-align:center;padding:40px">
                 <i class="fas fa-search" style="font-size:3rem;color:var(--primary-gold);margin-bottom:20px"></i>
-                <h3>No se encontraron cursos</h3>
-                <p style="color:var(--text-secondary)">Prueba con otros filtros</p>
+                <h3>No hay cursos</h3>
+                <button onclick="loadFromGoogleSheets()" class="btn btn-primary">Recargar</button>
             </div>
         `;
         return;
@@ -202,22 +236,22 @@ function renderCourses() {
             </div>
             <div class="course-content">
                 <div class="course-header">
-                    <h3 class="course-title">${course.title}</h3>
-                    ${course.certificate ? 
+                    <h3 class="course-title">${course.title || 'Curso'}</h3>
+                    ${(course.certificate === true || course.certificate === 'true' || course.certificate === 'TRUE') ? 
                         '<div class="certificate-badge"><i class="fas fa-certificate"></i> Certificado</div>' : 
                         ''
                     }
                 </div>
-                <p class="course-description">${course.description}</p>
+                <p class="course-description">${course.description || course.descripcion || 'Descripción'}</p>
                 <div class="course-meta">
-                    <span class="course-category">${course.category}</span>
-                    <span class="course-platform">${course.platform}</span>
+                    <span class="course-category">${course.category || course.categoria || 'General'}</span>
+                    <span class="course-platform">${course.platform || course.plataforma || 'Plataforma'}</span>
                 </div>
                 <div class="course-actions">
-                    <button class="btn btn-small btn-primary view-btn">Ver Detalles</button>
-                    ${course.link !== '#' ? 
-                        `<a href="${course.link}" target="_blank" class="btn btn-small btn-secondary">Ir al Curso</a>` : 
-                        `<button class="btn btn-small btn-secondary" disabled>Sin enlace</button>`
+                    <button class="btn btn-small btn-primary view-btn">Ver Curso</button>
+                    ${(course.link || course.enlace) && (course.link !== '#' || course.enlace !== '#') ? 
+                        `<a href="${course.link || course.enlace}" target="_blank" class="btn btn-small btn-secondary">Enlace Externo</a>` : 
+                        ''
                     }
                 </div>
             </div>
@@ -233,39 +267,96 @@ function renderCourses() {
 function updateCourseCount() {
     const counter = document.getElementById('total-courses');
     if (counter) {
-        counter.textContent = courses.filter(c => c.active !== false).length;
+        const active = courses.filter(c => 
+            c.active !== false && 
+            c.active !== 'false' && 
+            c.active !== 'FALSE'
+        ).length;
+        counter.textContent = active;
     }
 }
 
-// ==================== MODAL ====================
+// ==================== MODAL CON EMBED ====================
 function openModal(course) {
     const modal = document.getElementById('course-modal');
     const title = document.getElementById('modal-course-title');
     const content = document.getElementById('modal-course-content');
     
-    if (modal && title && content) {
-        title.textContent = course.title;
-        content.innerHTML = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px">
-                <div><strong>Plataforma:</strong> ${course.platform}</div>
-                <div><strong>Categoría:</strong> ${course.category}</div>
-                <div><strong>Certificado:</strong> ${course.certificate ? 'Sí' : 'No'}</div>
-                <div><strong>Estado:</strong> ${course.active ? 'Activo' : 'Inactivo'}</div>
+    if (!modal || !title || !content) return;
+    
+    const courseTitle = course.title || 'Curso';
+    const courseDesc = course.description || course.descripcion || 'Descripción no disponible';
+    const courseCategory = course.category || course.categoria || 'General';
+    const coursePlatform = course.platform || course.plataforma || 'No especificada';
+    const hasCert = course.certificate === true || course.certificate === 'true' || course.certificate === 'TRUE';
+    const isActive = course.active !== false && course.active !== 'false' && course.active !== 'FALSE';
+    
+    title.textContent = courseTitle;
+    
+    // CONSTRUIR CONTENIDO DEL MODAL CON EMBED
+    let modalHTML = `
+        <div class="course-details">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:25px">
+                <div>
+                    <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:5px">Plataforma</div>
+                    <div style="font-weight:500;color:var(--text-color)">${coursePlatform}</div>
+                </div>
+                <div>
+                    <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:5px">Categoría</div>
+                    <div style="font-weight:500;color:var(--text-color)">${courseCategory}</div>
+                </div>
+                <div>
+                    <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:5px">Certificado</div>
+                    <div style="font-weight:500;color:${hasCert ? 'var(--primary-gold)' : 'var(--text-secondary)'}">
+                        ${hasCert ? '✅ Incluido' : '❌ No incluido'}
+                    </div>
+                </div>
+                <div>
+                    <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:5px">Estado</div>
+                    <div style="font-weight:500;color:${isActive ? '#4CAF50' : '#f44336'}">
+                        ${isActive ? '🟢 Activo' : '🔴 Inactivo'}
+                    </div>
+                </div>
             </div>
+            
+            <div style="margin-bottom:30px">
+                <h4 style="color:var(--text-color);margin-bottom:15px">Descripción</h4>
+                <p style="color:var(--text-color);line-height:1.6">${courseDesc}</p>
+            </div>
+    `;
+    
+    // AGREGAR EL EMBED SI EXISTE
+    if (course.embed) {
+        modalHTML += `
             <div class="course-embed">
-                <div class="text-content">
-                    <h4>Descripción Completa</h4>
-                    <p>${course.description}</p>
-                    ${course.link !== '#' ? 
-                        `<p><a href="${course.link}" target="_blank" class="btn btn-primary">Acceder al curso</a></p>` : 
-                        ''
-                    }
+                <h4 style="color:var(--text-color);margin-bottom:15px">Contenido del Curso</h4>
+                <div style="margin:20px 0">
+                    ${course.embed}
                 </div>
             </div>
         `;
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+    } else if (course.link || course.enlace) {
+        const link = course.link || course.enlace;
+        if (link.includes('youtube') || link.includes('youtu.be')) {
+            const videoId = extractYouTubeId(link);
+            if (videoId) {
+                modalHTML += `
+                    <div class="course-embed">
+                        <h4 style="color:var(--text-color);margin-bottom:15px">Video del Curso</h4>
+                        <div style="margin:20px 0">
+                            ${createYouTubeEmbed(videoId)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
     }
+    
+    modalHTML += `</div>`;
+    
+    content.innerHTML = modalHTML;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
@@ -283,7 +374,8 @@ function setupAdmin() {
     if (adminBtn) {
         adminBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            openAdmin();
+            document.getElementById('admin-overlay').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         });
     }
     
@@ -298,42 +390,17 @@ function setupAdmin() {
             if (user === 'admin' && pass === 'admin123') {
                 document.getElementById('admin-login').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'block';
-                loadAdminCourses();
             } else {
-                alert('Credenciales: admin / admin123');
+                alert('admin / admin123');
             }
         });
     }
     
-    // Botón mostrar credenciales
-    const showCredsBtn = document.getElementById('show-creds-btn');
-    if (showCredsBtn) {
-        showCredsBtn.addEventListener('click', () => {
-            const hint = document.getElementById('login-hint');
-            hint.classList.toggle('active');
-            showCredsBtn.textContent = hint.classList.contains('active') ? 
-                'Ocultar Credenciales' : 'Mostrar Credenciales';
-        });
-    }
-    
-    // Cancelar login
-    const cancelBtn = document.getElementById('cancel-login-btn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeAdmin);
-    }
-    
-    // Logout
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            document.getElementById('admin-login').style.display = 'block';
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('admin-username').value = '';
-            document.getElementById('admin-password').value = '';
-            document.getElementById('login-hint').classList.remove('active');
-            document.getElementById('show-creds-btn').textContent = 'Mostrar Credenciales';
-        });
-    }
+    // Cancelar
+    document.getElementById('cancel-login-btn').addEventListener('click', () => {
+        document.getElementById('admin-overlay').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    });
     
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -342,11 +409,7 @@ function setupAdmin() {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
             this.classList.add('active');
-            const tabId = this.dataset.tab;
-            document.getElementById(tabId).classList.add('active');
-            
-            if (tabId === 'courses-tab') loadAdminCourses();
-            if (tabId === 'branding-tab') loadBranding();
+            document.getElementById(this.dataset.tab).classList.add('active');
         });
     });
     
@@ -355,146 +418,52 @@ function setupAdmin() {
     const resetLogoBtn = document.getElementById('reset-logo-btn');
     const logoUrlInput = document.getElementById('logo-url');
     
-    if (saveLogoBtn) saveLogoBtn.addEventListener('click', saveLogo);
-    if (resetLogoBtn) resetLogoBtn.addEventListener('click', resetLogo);
-    if (logoUrlInput) {
-        logoUrlInput.value = customLogoUrl;
-        logoUrlInput.addEventListener('input', updateLogoPreview);
-        updateLogoPreview();
-    }
-}
-
-function openAdmin() {
-    document.getElementById('admin-overlay').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeAdmin() {
-    document.getElementById('admin-overlay').style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-function loadAdminCourses() {
-    const container = document.getElementById('admin-courses-list');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    courses.forEach(course => {
-        const item = document.createElement('div');
-        item.className = 'admin-course-item';
-        item.innerHTML = `
-            <div class="admin-course-header">
-                <div class="admin-course-title">${course.title}</div>
-                <div class="admin-course-actions">
-                    <button class="action-btn edit" onclick="editCourse(${course.id})">
-                        <i class="fas fa-edit"></i> Editar
-                    </button>
-                    <button class="action-btn delete" onclick="deleteCourse(${course.id})">
-                        <i class="fas fa-trash"></i> Eliminar
-                    </button>
-                </div>
-            </div>
-            <div class="admin-course-details">
-                <div><strong>Categoría:</strong> ${course.category}</div>
-                <div><strong>Plataforma:</strong> ${course.platform}</div>
-                <div><strong>Certificado:</strong> ${course.certificate ? 'Sí' : 'No'}</div>
-                <div><strong>Estado:</strong> ${course.active ? 'Activo' : 'Inactivo'}</div>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function loadBranding() {
-    updateLogoPreview();
-}
-
-function updateLogoPreview() {
-    const img = document.getElementById('logo-preview-img');
-    const text = document.getElementById('default-logo-text');
-    const url = document.getElementById('logo-url').value;
-    
-    if (img && text) {
+    if (saveLogoBtn) saveLogoBtn.addEventListener('click', function() {
+        const url = logoUrlInput.value;
         if (url) {
-            img.src = url;
-            img.classList.add('active');
-            text.style.display = 'none';
-            
-            img.onerror = function() {
-                img.classList.remove('active');
-                text.style.display = 'block';
-                text.textContent = 'Error al cargar';
-            };
-        } else {
-            img.classList.remove('active');
-            text.style.display = 'block';
-            text.textContent = 'Logo predeterminado';
-        }
-    }
-}
-
-function saveLogo() {
-    const url = document.getElementById('logo-url').value.trim();
-    
-    if (url) {
-        try {
-            new URL(url); // Validar URL
             customLogoUrl = url;
             localStorage.setItem('customLogoUrl', url);
             updateHeroLogo();
             alert('Logo guardado');
-        } catch {
-            alert('URL inválida');
         }
-    } else {
-        alert('Ingresa una URL');
+    });
+    
+    if (resetLogoBtn) resetLogoBtn.addEventListener('click', function() {
+        customLogoUrl = '';
+        localStorage.removeItem('customLogoUrl');
+        logoUrlInput.value = '';
+        updateHeroLogo();
+        alert('Logo reseteado');
+    });
+    
+    if (logoUrlInput) {
+        logoUrlInput.value = customLogoUrl;
+        logoUrlInput.addEventListener('input', function() {
+            document.getElementById('logo-preview-img').src = this.value;
+        });
     }
-}
-
-function resetLogo() {
-    customLogoUrl = '';
-    localStorage.removeItem('customLogoUrl');
-    document.getElementById('logo-url').value = '';
-    updateLogoPreview();
-    updateHeroLogo();
-    alert('Logo restablecido');
 }
 
 function updateHeroLogo() {
-    const img = document.getElementById('hero-logo-img');
-    const defaultLogo = document.querySelector('.hero-logo-default');
+    const heroImg = document.getElementById('hero-logo-img');
+    const heroDefault = document.querySelector('.hero-logo-default');
     
-    if (img && defaultLogo) {
+    if (heroImg && heroDefault) {
         if (customLogoUrl) {
-            img.src = customLogoUrl;
-            img.classList.add('active');
-            defaultLogo.style.display = 'none';
-            
-            img.onerror = function() {
-                img.classList.remove('active');
-                defaultLogo.style.display = 'flex';
-            };
+            heroImg.src = customLogoUrl;
+            heroImg.style.display = 'block';
+            heroDefault.style.display = 'none';
         } else {
-            img.classList.remove('active');
-            defaultLogo.style.display = 'flex';
+            heroImg.style.display = 'none';
+            heroDefault.style.display = 'flex';
         }
     }
 }
 
-// Funciones globales
-window.editCourse = function(id) {
-    alert('Para editar, modifica tu Google Sheets directamente.\nLos cambios se verán al recargar.');
-};
-
-window.deleteCourse = function(id) {
-    if (confirm('¿Eliminar curso?\nNota: Debes borrarlo en Google Sheets.')) {
-        alert('Elimínalo en Google Sheets y recarga la página.');
-    }
-};
-
-window.closeModal = closeModal;
+// ==================== FUNCIONES GLOBALES ====================
 window.openModal = openModal;
+window.closeModal = closeModal;
+window.loadFromGoogleSheets = loadFromGoogleSheets;
 
 // Inicializar logo
 updateHeroLogo();

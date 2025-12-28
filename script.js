@@ -204,15 +204,22 @@ function createCourseCard(course) {
     const courseCard = document.createElement('div');
     courseCard.className = 'course-card';
     
-    // Determinar ícono según categoría
+    // Determinar ícono según categoría (solo si no hay thumbnail)
     let iconClass = 'fas fa-laptop-code';
     if (course.category.includes('Programación')) iconClass = 'fas fa-code';
     if (course.category.includes('Diseño')) iconClass = 'fas fa-palette';
     if (course.category.includes('Marketing')) iconClass = 'fas fa-bullhorn';
     
+    // HTML con PORTADA/THUMBNAIL
     courseCard.innerHTML = `
         <div class="course-image">
-            <i class="${iconClass}"></i>
+            ${course.thumbnail ? 
+                `<img src="${course.thumbnail}" alt="${course.title}" 
+                     style="width:100%;height:100%;object-fit:cover;border-radius:8px 8px 0 0;"
+                     onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJNb250c2VycmF0IiBmb250LXNpemU9IjE0IiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Q1VSU08gREUgJFtlbnRlciB0aXRsZV08L3RleHQ+PC9zdmc+'; this.parentElement.innerHTML='<i class=\'${iconClass}\'></i>'">
+                ` : 
+                `<i class="${iconClass}"></i>`
+            }
         </div>
         <div class="course-content">
             <div class="course-header">

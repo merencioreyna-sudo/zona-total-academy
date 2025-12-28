@@ -1,13 +1,15 @@
 // ============================================
-// CONFIGURACIÓN SIMPLIFICADA
+// CONFIGURACIÓN PRINCIPAL
 // ============================================
 
-// FORMA 1: Usar CSV público (la más fácil)
-const USE_CSV_METHOD = true; // Cambia a false si quieres usar la otra forma
+// ELIGE UN MÉTODO (descomenta solo uno):
+
+// MÉTODO 1: CSV Público (RECOMENDADO - más fácil)
 const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJpv1h9XBYo7gJPLBx4U_1IiRkf0v-y2W2Z_o-O3V67aPSqAzvBdAomO7SPy-dVSYw3cyUwD3C0oVJ/pub?output=csv';
 
-// FORMA 2: Usar JSON (necesita configuración adicional)
-const GOOGLE_SHEET_ID = 'TU_ID_DE_GOOGLE_SHEETS'; // Solo si usas JSON
+// MÉTODO 2: JSON con opensheet.elk.sh
+// const GOOGLE_SHEET_ID = 'TU_ID_AQUI'; // Solo el ID, no la URL completa
+// const SHEET_NAME = 'Cursos'; // Nombre de la hoja
 
 // Variables globales
 let courses = [];
@@ -19,51 +21,54 @@ let searchQuery = "";
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Academia Élite - Iniciando...');
+    console.log('Academia Élite - Inicializando...');
     
     initNavigation();
     initFilters();
     initModal();
+    initAdmin();
     setupEventListeners();
     
-    // Cargar cursos
-    loadCourses();
+    // Cargar cursos automáticamente
+    setTimeout(() => {
+        loadCourses();
+    }, 500);
 });
 
 // ============================================
-// CARGAR CURSOS (FUNCIONAL)
+// FUNCIÓN PRINCIPAL PARA CARGAR CURSOS
 // ============================================
 async function loadCourses() {
-    console.log('Cargando cursos...');
-    
-    // Mostrar estado de carga
+    console.log('Iniciando carga de cursos...');
     showLoading(true);
     hideError();
     
     try {
-        if (USE_CSV_METHOD) {
-            await loadFromCSV();
-        } else {
-            await loadFromGoogleSheetsAPI();
-        }
+        // Intentar cargar desde Google Sheets CSV
+        await loadFromCSV();
     } catch (error) {
-        console.error('Error cargando cursos:', error);
-        showError('No se pudieron cargar los cursos. Usando datos de ejemplo.');
+        console.warn('Error con Google Sheets:', error);
+        
+        // Si falla, mostrar datos de ejemplo con instrucciones
         loadSampleData();
+        showConfigInstructions();
     } finally {
         showLoading(false);
     }
 }
 
 // ============================================
-// MÉTODO 1: CSV PÚBLICO (RECOMENDADO)
+// MÉTODO CSV (EL MÁS CONFIABLE)
 // ============================================
 async function loadFromCSV() {
-    console.log('Usando método CSV...');
+    console.log('Cargando desde CSV...');
     
-    // URL de ejemplo - REEMPLAZA ESTA CON TU URL REAL
-    // Para obtenerla: Ve a Archivo → Compartir → Publicar en web → Selecciona CSV
     const csvUrl = GOOGLE_SHEETS_CSV_URL;
+    
+    // Verificar que la URL no sea la de ejemplo
+    if (csvUrl.includes('TU_ID_AQUI') || csvUrl.includes('EXAMPLE')) {
+        throw new Error('Configura la URL de Google Sheets primero');
+    }
     
     const response = await fetch(csvUrl);
     
@@ -72,63 +77,59 @@ async function loadFromCSV() {
     }
     
     const csvText = await response.text();
-    console.log('CSV recibido:', csvText.substring(0, 200) + '...');
     
-    // Parsear CSV
-    const lines = csvText.split('\n').filter(line => line.trim() !== '');
-    
-    if (lines.length === 0) {
-        throw new Error('CSV vacío');
+    // Verificar que no esté vacío
+    if (!csvText || csvText.trim() === '') {
+        throw new Error('El CSV está vacío');
     }
     
-    // Parsear encabezados
+    // Parsear CSV
+    parseCSVData(csvText);
+    console.log(`✅ ${courses.length} cursos cargados desde Google Sheets`);
+    
+    // Actualizar UI
+    updateUI();
+}
+
+function parseCSVData(csvText) {
+    // Separar líneas
+    const lines = csvText.split('\n').map(line => line.trim()).filter(line => line !== '');
+    
+    if (lines.length < 2) {
+        throw new Error('El CSV necesita al menos una fila de encabezados y una de datos');
+    }
+    
+    // Parsear encabezados (primera línea)
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    console.log('Encabezados:', headers);
     
     // Parsear datos
     courses = [];
     
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
-        const values = parseCSVLine(line);
-        
-        if (values.length === 0) continue;
+        const values = splitCSVLine(line);
         
         const course = { id: i };
         
-        // Mapear valores a propiedades
-        headers.forEach((header, index) => {
-            if (index < values.length) {
-                course[header] = values[index].trim();
-            }
-        });
+        // Asignar valores según posición
+        if (values[0]) course.title = values[0].trim();
+        if (values[1]) course.description = values[1].trim();
+        if (values[2]) course.category = values[2].trim();
+        if (values[3]) course.platform = values[3].trim();
+        if (values[4]) course.link = values[4].trim();
         
-        // Asegurar campos mínimos
-        if (!course.title && course.titulo) {
-            course.title = course.titulo;
-        }
-        if (!course.description && course.descripcion) {
-            course.description = course.descripcion;
-        }
-        if (!course.category && course.categoria) {
-            course.category = course.categoria;
-        }
-        if (!course.platform && course.plataforma) {
-            course.platform = course.plataforma;
-        }
-        if (!course.link && course.enlace) {
-            course.link = course.enlace;
+        // Procesar certificado (columna 5)
+        if (values[5]) {
+            const certValue = values[5].trim().toLowerCase();
+            course.certificate = certValue === 'true' || certValue === 'sí' || certValue === 'si' || certValue === '1';
+        } else {
+            course.certificate = false;
         }
         
-        // Convertir booleanos
-        if (course.certificado || course.certificate) {
-            const certValue = course.certificado || course.certificate;
-            course.certificate = certValue === 'TRUE' || certValue === 'true' || certValue === 'Sí' || certValue === 'sí';
-        }
-        
-        if (course.activo || course.active) {
-            const activeValue = course.activo || course.active;
-            course.active = activeValue !== 'FALSE' && activeValue !== 'false' && activeValue !== 'No';
+        // Procesar activo (columna 6)
+        if (values[6]) {
+            const activeValue = values[6].trim().toLowerCase();
+            course.active = !(activeValue === 'false' || activeValue === 'no' || activeValue === '0');
         } else {
             course.active = true; // Por defecto activo
         }
@@ -138,66 +139,34 @@ async function loadFromCSV() {
             courses.push(course);
         }
     }
-    
-    console.log(`${courses.length} cursos cargados desde CSV`);
-    updateUI();
 }
 
-// Función para parsear líneas CSV (maneja comas dentro de comillas)
-function parseCSVLine(line) {
+// Función para dividir líneas CSV (maneja comas dentro de comillas)
+function splitCSVLine(line) {
     const values = [];
-    let currentValue = '';
+    let current = '';
     let inQuotes = false;
     
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
-        const nextChar = line[i + 1];
         
         if (char === '"') {
-            if (inQuotes && nextChar === '"') {
-                // Comilla doble dentro de comillas
-                currentValue += '"';
-                i++; // Saltar la siguiente comilla
-            } else {
-                // Comilla simple - alternar estado
-                inQuotes = !inQuotes;
-            }
+            inQuotes = !inQuotes;
         } else if (char === ',' && !inQuotes) {
-            // Fin del valor
-            values.push(currentValue);
-            currentValue = '';
+            values.push(current);
+            current = '';
         } else {
-            currentValue += char;
+            current += char;
         }
     }
     
     // Agregar el último valor
-    values.push(currentValue);
+    values.push(current);
     return values;
 }
 
 // ============================================
-// MÉTODO 2: API de Google Sheets (alternativa)
-// ============================================
-async function loadFromGoogleSheetsAPI() {
-    console.log('Usando método API...');
-    
-    // Esta URL SÍ funciona para hojas públicas
-    const url = `https://opensheet.elk.sh/${GOOGLE_SHEET_ID}/Cursos`;
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-    }
-    
-    courses = await response.json();
-    console.log(`${courses.length} cursos cargados desde API`);
-    updateUI();
-}
-
-// ============================================
-// DATOS DE EJEMPLO (si todo falla)
+// DATOS DE EJEMPLO (cuando Google Sheets falla)
 // ============================================
 function loadSampleData() {
     console.log('Cargando datos de ejemplo...');
@@ -205,8 +174,8 @@ function loadSampleData() {
     courses = [
         {
             id: 1,
-            title: "React Avanzado - Ejemplo",
-            description: "Curso de desarrollo con React. Configura tu Google Sheets para ver tus cursos reales.",
+            title: "React JS - Desarrollo Web Moderno",
+            description: "Aprende React desde cero hasta nivel avanzado. Incluye hooks, context API y proyectos reales.",
             category: "Programación",
             platform: "Udemy",
             link: "#",
@@ -215,8 +184,8 @@ function loadSampleData() {
         },
         {
             id: 2,
-            title: "Marketing Digital",
-            description: "Estrategias de marketing moderno. Añade tus cursos en Google Sheets.",
+            title: "Marketing Digital Completo",
+            description: "Estrategias de marketing digital, SEO, redes sociales y análisis de métricas.",
             category: "Marketing",
             platform: "Coursera",
             link: "#",
@@ -226,9 +195,39 @@ function loadSampleData() {
         {
             id: 3,
             title: "Diseño UX/UI Profesional",
-            description: "Aprende diseño de interfaces. Configura tu Google Sheets.",
+            description: "Aprende diseño de interfaces y experiencia de usuario con Figma y Adobe XD.",
             category: "Diseño",
             platform: "Platzi",
+            link: "#",
+            certificate: true,
+            active: true
+        },
+        {
+            id: 4,
+            title: "Python para Ciencia de Datos",
+            description: "Curso completo de Python aplicado a análisis de datos y machine learning.",
+            category: "Data Science",
+            platform: "edX",
+            link: "#",
+            certificate: true,
+            active: true
+        },
+        {
+            id: 5,
+            title: "Finanzas Personales e Inversiones",
+            description: "Aprende a manejar tus finanzas, crear presupuestos y empezar a invertir.",
+            category: "Finanzas",
+            platform: "Udemy",
+            link: "#",
+            certificate: false,
+            active: true
+        },
+        {
+            id: 6,
+            title: "Desarrollo Web Full Stack",
+            description: "Conviértete en desarrollador full stack aprendiendo frontend y backend.",
+            category: "Programación",
+            platform: "Coursera",
             link: "#",
             certificate: true,
             active: true
@@ -236,41 +235,10 @@ function loadSampleData() {
     ];
     
     updateUI();
-    
-    // Mostrar mensaje de ayuda
-    showHelpMessage();
-}
-
-function showHelpMessage() {
-    const message = `
-        <div style="text-align: center; padding: 20px; margin-top: 20px; background: rgba(212, 175, 55, 0.1); border-radius: 8px;">
-            <h4 style="color: var(--primary-gold); margin-bottom: 10px;">
-                <i class="fas fa-info-circle"></i> Cómo configurar Google Sheets
-            </h4>
-            <ol style="text-align: left; display: inline-block; margin: 0 auto; color: var(--text-secondary);">
-                <li>Abre tu Google Sheet con los cursos</li>
-                <li>Ve a <strong>Archivo → Compartir → Publicar en web</strong></li>
-                <li>Selecciona formato <strong>CSV</strong></li>
-                <li>Copia la URL generada</li>
-                <li>Pégala en el código (línea 7)</li>
-            </ol>
-            <button onclick="showConfigGuide()" class="btn btn-small" style="margin-top: 15px;">
-                <i class="fas fa-cogs"></i> Ver guía completa
-            </button>
-        </div>
-    `;
-    
-    const coursesGrid = document.getElementById('courses-grid');
-    if (coursesGrid) {
-        const helpDiv = document.createElement('div');
-        helpDiv.style.gridColumn = '1/-1';
-        helpDiv.innerHTML = message;
-        coursesGrid.appendChild(helpDiv);
-    }
 }
 
 // ============================================
-// ACTUALIZAR INTERFAZ
+// ACTUALIZAR INTERFAZ DE USUARIO
 // ============================================
 function updateUI() {
     updateCategoriesFromCourses();
@@ -280,16 +248,20 @@ function updateUI() {
 }
 
 function updateCategoriesFromCourses() {
+    // Resetear categorías (mantener "todos")
     categories = [{ id: "todos", name: "Todos", displayName: "Todos" }];
     
-    const uniqueCategories = new Set();
+    // Obtener categorías únicas de los cursos
+    const categorySet = new Set();
+    
     courses.forEach(course => {
         if (course.category && course.category.trim()) {
-            uniqueCategories.add(course.category.trim());
+            categorySet.add(course.category.trim());
         }
     });
     
-    uniqueCategories.forEach(catName => {
+    // Agregar categorías al array
+    categorySet.forEach(catName => {
         const id = catName.toLowerCase().replace(/\s+/g, '-');
         const displayName = catName.charAt(0).toUpperCase() + catName.slice(1);
         
@@ -300,28 +272,42 @@ function updateCategoriesFromCourses() {
         });
     });
     
-    console.log('Categorías:', categories);
+    // Ordenar alfabéticamente
+    categories.sort((a, b) => {
+        if (a.id === 'todos') return -1;
+        if (b.id === 'todos') return 1;
+        return a.displayName.localeCompare(b.displayName);
+    });
 }
 
 function updateFilterButtons() {
     const filterButtons = document.getElementById('filter-buttons');
     if (!filterButtons) return;
     
+    // Limpiar botones existentes
     filterButtons.innerHTML = '';
     
+    // Crear nuevos botones
     categories.forEach(category => {
         const button = document.createElement('button');
         button.className = `filter-btn ${category.id === currentCategory ? 'active' : ''}`;
         button.textContent = category.displayName;
         button.dataset.category = category.id;
+        
         button.addEventListener('click', () => {
+            // Actualizar categoría activa
             currentCategory = category.id;
+            
+            // Actualizar estado visual de los botones
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             button.classList.add('active');
+            
+            // Volver a renderizar los cursos
             renderCourses();
         });
+        
         filterButtons.appendChild(button);
     });
 }
@@ -330,59 +316,80 @@ function renderCourses() {
     const coursesGrid = document.getElementById('courses-grid');
     if (!coursesGrid) return;
     
-    // Filtrar cursos
-    let filteredCourses = courses.filter(course => 
-        course.active !== false && course.active !== 'false' && course.active !== 'FALSE'
-    );
+    // Ocultar mensaje de error si está visible
+    hideError();
     
+    // Filtrar cursos según categoría y búsqueda
+    let filteredCourses = courses.filter(course => course.active === true);
+    
+    // Filtrar por categoría
     if (currentCategory !== 'todos') {
         filteredCourses = filteredCourses.filter(course => {
-            const catId = (course.category || '').toLowerCase().replace(/\s+/g, '-');
-            return catId === currentCategory;
+            const courseCategoryId = (course.category || 'general').toLowerCase().replace(/\s+/g, '-');
+            return courseCategoryId === currentCategory;
         });
     }
     
+    // Filtrar por búsqueda
     if (searchQuery) {
         filteredCourses = filteredCourses.filter(course => {
-            const searchIn = [
+            const searchableText = [
                 course.title || '',
                 course.description || '',
                 course.platform || '',
                 course.category || ''
             ].join(' ').toLowerCase();
             
-            return searchIn.includes(searchQuery);
+            return searchableText.includes(searchQuery.toLowerCase());
         });
     }
     
-    // Limpiar grid
+    // Limpiar el grid
     coursesGrid.innerHTML = '';
     
-    // Si no hay cursos
+    // Si no hay cursos después de filtrar
     if (filteredCourses.length === 0) {
         coursesGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                <i class="fas fa-search" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 20px; opacity: 0.5;"></i>
-                <h3 style="margin-bottom: 10px; color: var(--text-color);">No se encontraron cursos</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                    ${searchQuery ? 'No hay cursos que coincidan con tu búsqueda.' : 'No hay cursos disponibles.'}
+            <div class="no-courses" style="grid-column: 1/-1; text-align: center; padding: 50px 20px;">
+                <i class="fas fa-search" style="font-size: 3.5rem; color: var(--primary-gold); margin-bottom: 20px; opacity: 0.6;"></i>
+                <h3 style="color: var(--text-color); margin-bottom: 15px; font-size: 1.5rem;">
+                    ${searchQuery ? 'No se encontraron cursos' : 'No hay cursos disponibles'}
+                </h3>
+                <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    ${searchQuery ? 
+                        'Prueba con otros términos de búsqueda o elimina los filtros.' : 
+                        'Configura tu Google Sheets o agrega más cursos.'
+                    }
                 </p>
-                ${searchQuery ? 
-                    '<button onclick="searchQuery=\'\'; renderCourses();" class="btn btn-primary">Limpiar búsqueda</button>' : 
-                    '<button onclick="loadCourses();" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Recargar cursos</button>'
-                }
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    ${searchQuery ? 
+                        `<button onclick="clearSearch()" class="btn btn-primary">
+                            <i class="fas fa-times"></i> Limpiar búsqueda
+                        </button>` : ''
+                    }
+                    <button onclick="loadCourses()" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Recargar cursos
+                    </button>
+                </div>
             </div>
         `;
         return;
     }
     
-    // Renderizar cursos
+    // Renderizar cada curso
     filteredCourses.forEach(course => {
         const categoryName = course.category || 'General';
         const categoryId = categoryName.toLowerCase().replace(/\s+/g, '-');
-        const category = categories.find(cat => cat.id === categoryId) || {
-            displayName: categoryName.charAt(0).toUpperCase() + categoryName.slice(1)
-        };
+        
+        // Buscar la categoría o crear una temporal
+        let category = categories.find(cat => cat.id === categoryId);
+        if (!category) {
+            category = {
+                id: categoryId,
+                name: categoryName,
+                displayName: categoryName.charAt(0).toUpperCase() + categoryName.slice(1)
+            };
+        }
         
         const courseCard = createCourseCard(course, category);
         coursesGrid.appendChild(courseCard);
@@ -393,20 +400,23 @@ function createCourseCard(course, category) {
     const courseCard = document.createElement('div');
     courseCard.className = 'course-card';
     
-    // Determinar ícono
+    // Determinar ícono según categoría
     let iconClass = 'fas fa-laptop-code';
-    const catLower = (course.category || '').toLowerCase();
+    const categoryLower = (category.name || '').toLowerCase();
     
-    if (catLower.includes('diseño') || catLower.includes('design')) {
+    if (categoryLower.includes('diseño') || categoryLower.includes('design')) {
         iconClass = 'fas fa-palette';
-    } else if (catLower.includes('marketing')) {
+    } else if (categoryLower.includes('marketing')) {
         iconClass = 'fas fa-bullhorn';
-    } else if (catLower.includes('finanza') || catLower.includes('negocio')) {
+    } else if (categoryLower.includes('finanza') || categoryLower.includes('business')) {
         iconClass = 'fas fa-chart-line';
-    } else if (catLower.includes('data') || catLower.includes('ciencia')) {
+    } else if (categoryLower.includes('data') || categoryLower.includes('ciencia')) {
         iconClass = 'fas fa-chart-bar';
+    } else if (categoryLower.includes('video') || categoryLower.includes('media')) {
+        iconClass = 'fas fa-video';
     }
     
+    // Construir HTML del curso
     courseCard.innerHTML = `
         <div class="course-image">
             <i class="${iconClass}"></i>
@@ -440,8 +450,9 @@ function createCourseCard(course, category) {
         </div>
     `;
     
-    // Event listener
-    courseCard.querySelector('.view-course-btn').addEventListener('click', () => {
+    // Agregar evento para abrir el modal
+    const viewBtn = courseCard.querySelector('.view-course-btn');
+    viewBtn.addEventListener('click', () => {
         openCourseModal(course);
     });
     
@@ -451,15 +462,13 @@ function createCourseCard(course, category) {
 function updateCourseCount() {
     const totalCoursesElement = document.getElementById('total-courses');
     if (totalCoursesElement) {
-        const activeCourses = courses.filter(course => 
-            course.active !== false && course.active !== 'false' && course.active !== 'FALSE'
-        ).length;
+        const activeCourses = courses.filter(course => course.active === true).length;
         totalCoursesElement.textContent = activeCourses;
     }
 }
 
 // ============================================
-// ESTADOS DE UI
+// MANEJO DE ESTADOS DE UI
 // ============================================
 function showLoading(show) {
     const loadingElement = document.getElementById('loading-courses');
@@ -480,9 +489,9 @@ function showError(message) {
     
     if (errorElement) {
         errorElement.innerHTML = `
-            <div style="text-align: center; padding: 30px;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: var(--primary-gold); margin-bottom: 15px;"></i>
-                <h4 style="color: var(--text-color); margin-bottom: 10px;">Atención</h4>
+            <div style="text-align: center; padding: 30px; background-color: rgba(255, 107, 107, 0.1); border-radius: 8px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: #ff6b6b; margin-bottom: 15px;"></i>
+                <h4 style="color: var(--text-color); margin-bottom: 10px;">Error al cargar cursos</h4>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">${message}</p>
                 <button onclick="loadCourses()" class="btn btn-primary">
                     <i class="fas fa-redo"></i> Reintentar
@@ -505,33 +514,227 @@ function hideError() {
 }
 
 // ============================================
-// EVENT LISTENERS
+// FUNCIONES AUXILIARES
+// ============================================
+function clearSearch() {
+    searchQuery = '';
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    renderCourses();
+}
+
+function showConfigInstructions() {
+    // Solo mostrar instrucciones si estamos usando datos de ejemplo
+    if (courses.length > 0 && courses[0].title.includes("React JS")) {
+        const instructionHTML = `
+            <div style="grid-column: 1/-1; margin: 20px 0; padding: 20px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-gold);">
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <div style="font-size: 1.5rem; color: var(--primary-gold);">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: var(--text-color); margin-bottom: 10px; font-size: 1.1rem;">
+                            ¡Configura tu Google Sheets!
+                        </h4>
+                        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.95rem;">
+                            Estás viendo datos de ejemplo. Para conectar tu Google Sheets:
+                        </p>
+                        <ol style="color: var(--text-secondary); padding-left: 20px; margin: 0; font-size: 0.9rem;">
+                            <li>Abre tu Google Sheet con los cursos</li>
+                            <li>Ve a <strong>Archivo → Compartir → Publicar en web</strong></li>
+                            <li>Selecciona <strong>CSV</strong> y haz clic en "Publicar"</li>
+                            <li>Copia la URL generada</li>
+                            <li>Pégala en la línea 7 del archivo script.js</li>
+                        </ol>
+                        <button onclick="showDetailedGuide()" class="btn btn-small" style="margin-top: 15px; background-color: var(--primary-gold); color: var(--primary-black);">
+                            <i class="fas fa-book"></i> Ver guía completa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const coursesGrid = document.getElementById('courses-grid');
+        if (coursesGrid) {
+            const instructionDiv = document.createElement('div');
+            instructionDiv.innerHTML = instructionHTML;
+            coursesGrid.prepend(instructionDiv);
+        }
+    }
+}
+
+function showDetailedGuide() {
+    const guideHTML = `
+        <div class="modal-overlay" id="guide-modal" style="display: flex; z-index: 4000;">
+            <div class="modal-container" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cogs"></i> Configurar Google Sheets</h3>
+                    <button class="modal-close" onclick="document.getElementById('guide-modal').style.display='none'">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <div style="line-height: 1.6;">
+                        <h4 style="color: var(--text-color); margin-bottom: 15px;">Pasos detallados:</h4>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background-color: var(--primary-gold); color: var(--primary-black); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">1</div>
+                                <strong style="color: var(--text-color);">Prepara tu Google Sheet</strong>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-left: 34px; margin-bottom: 15px;">
+                                Crea una hoja con estas columnas:<br>
+                                <code style="background-color: var(--dark-gray); padding: 2px 6px; border-radius: 3px; font-size: 0.9rem;">Título, Descripción, Categoría, Plataforma, Enlace, Certificado, Activo</code>
+                            </p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background-color: var(--primary-gold); color: var(--primary-black); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">2</div>
+                                <strong style="color: var(--text-color);">Hazlo público</strong>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-left: 34px; margin-bottom: 15px;">
+                                Ve a <strong>Archivo → Compartir → Publicar en web</strong><br>
+                                Selecciona: <strong>Valores separados por comas (.csv)</strong><br>
+                                Haz clic en <strong>"Publicar"</strong>
+                            </p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background-color: var(--primary-gold); color: var(--primary-black); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">3</div>
+                                <strong style="color: var(--text-color);">Copia la URL</strong>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-left: 34px; margin-bottom: 15px;">
+                                Copia la URL que aparece. Debe terminar en <code>pub?output=csv</code>
+                            </p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div style="background-color: var(--primary-gold); color: var(--primary-black); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">4</div>
+                                <strong style="color: var(--text-color);">Configura el código</strong>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-left: 34px;">
+                                Abre el archivo <code>script.js</code><br>
+                                En la línea 7, reemplaza:<br>
+                                <code style="background-color: var(--dark-gray); padding: 2px 6px; border-radius: 3px; font-size: 0.9rem; display: inline-block; margin-top: 5px;">
+                                    const GOOGLE_SHEETS_CSV_URL = 'https://...TU_URL_AQUI...';
+                                </code><br>
+                                con tu URL real.
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: rgba(212, 175, 55, 0.1); padding: 15px; border-radius: 4px; margin-top: 20px;">
+                            <p style="color: var(--text-color); margin-bottom: 10px; font-size: 0.9rem;">
+                                <i class="fas fa-lightbulb" style="color: var(--primary-gold);"></i>
+                                <strong>Consejo:</strong> Los cambios en Google Sheets se reflejarán automáticamente al recargar la página.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="document.getElementById('guide-modal').style.display='none'">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Agregar el modal al body si no existe
+    if (!document.getElementById('guide-modal')) {
+        const guideModal = document.createElement('div');
+        guideModal.id = 'guide-modal';
+        guideModal.innerHTML = guideHTML;
+        document.body.appendChild(guideModal);
+    } else {
+        document.getElementById('guide-modal').style.display = 'flex';
+    }
+}
+
+// ============================================
+// CONFIGURACIÓN DE EVENTOS
 // ============================================
 function setupEventListeners() {
-    // Búsqueda
+    // Configurar búsqueda
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value.toLowerCase();
             renderCourses();
         });
+        
+        // Limpiar búsqueda con botón
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) {
+            const clearBtn = document.createElement('button');
+            clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+            clearBtn.style.cssText = `
+                position: absolute;
+                right: 40px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: var(--text-secondary);
+                cursor: pointer;
+                display: none;
+            `;
+            clearBtn.onclick = clearSearch;
+            
+            searchBox.appendChild(clearBtn);
+            
+            // Mostrar/ocultar botón de limpiar
+            searchInput.addEventListener('input', function() {
+                clearBtn.style.display = this.value ? 'block' : 'none';
+            });
+        }
     }
     
-    // Botón de actualización
-    const refreshBtn = document.createElement('button');
-    refreshBtn.className = 'btn btn-small btn-primary';
-    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
-    refreshBtn.style.marginLeft = '15px';
-    refreshBtn.onclick = loadCourses;
+    // Agregar botón de actualización
+    addRefreshButton();
+}
+
+function addRefreshButton() {
+    // Botón en la sección de cursos
+    const sectionHeader = document.querySelector('.section-header');
+    if (sectionHeader) {
+        // Remover botón existente
+        const existingBtn = sectionHeader.querySelector('.refresh-courses-btn');
+        if (existingBtn) existingBtn.remove();
+        
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'btn btn-small btn-primary refresh-courses-btn';
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
+        refreshBtn.style.marginLeft = '15px';
+        refreshBtn.onclick = loadCourses;
+        
+        sectionHeader.appendChild(refreshBtn);
+    }
     
+    // Botón en los filtros
     const filters = document.querySelector('.filters');
     if (filters) {
-        filters.appendChild(refreshBtn);
+        const existingFilterBtn = filters.querySelector('.refresh-filter-btn');
+        if (existingFilterBtn) existingFilterBtn.remove();
+        
+        const filterRefreshBtn = document.createElement('button');
+        filterRefreshBtn.className = 'btn btn-small refresh-filter-btn';
+        filterRefreshBtn.innerHTML = '<i class="fas fa-redo"></i>';
+        filterRefreshBtn.title = 'Actualizar cursos';
+        filterRefreshBtn.style.marginLeft = '10px';
+        filterRefreshBtn.onclick = loadCourses;
+        
+        const searchBox = filters.querySelector('.search-box');
+        if (searchBox) {
+            searchBox.parentNode.insertBefore(filterRefreshBtn, searchBox.nextSibling);
+        } else {
+            filters.appendChild(filterRefreshBtn);
+        }
     }
 }
 
 // ============================================
-// NAVEGACIÓN
+// NAVEGACIÓN Y MODAL
 // ============================================
 function initNavigation() {
     const hamburger = document.querySelector('.hamburger');
@@ -550,11 +753,25 @@ function initNavigation() {
             });
         });
     }
+    
+    // Smooth scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href === '#' || href === '#!') return;
+            
+            e.preventDefault();
+            const targetElement = document.querySelector(href);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
 }
 
-// ============================================
-// MODAL
-// ============================================
 function initModal() {
     const modalClose = document.getElementById('modal-close');
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -570,6 +787,15 @@ function initModal() {
             }
         });
     }
+    
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            const guideModal = document.getElementById('guide-modal');
+            if (guideModal) guideModal.style.display = 'none';
+        }
+    });
 }
 
 function openCourseModal(course) {
@@ -599,12 +825,18 @@ function openCourseModal(course) {
                         ${course.certificate ? '✅ Incluido' : '❌ No incluido'}
                     </div>
                 </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px;">Estado</div>
+                    <div style="font-weight: 500; color: ${course.active ? '#4CAF50' : '#f44336'}">
+                        ${course.active ? '🟢 Activo' : '🔴 Inactivo'}
+                    </div>
+                </div>
             </div>
             
             <div class="course-embed">
                 <div class="text-content">
                     <h4 style="color: var(--text-color); margin-bottom: 15px;">Descripción Completa</h4>
-                    <p style="color: var(--text-color); line-height: 1.7;">${course.description || 'Descripción no disponible'}</p>
+                    <p style="color: var(--text-color); line-height: 1.7; white-space: pre-line;">${course.description || 'Descripción no disponible'}</p>
                     
                     ${course.link && course.link !== '#' ? 
                         `<div style="margin-top: 25px;">
@@ -632,33 +864,83 @@ function closeModal() {
 }
 
 // ============================================
-// GUÍA DE CONFIGURACIÓN
+// ADMIN (versión simplificada)
 // ============================================
-function showConfigGuide() {
-    alert(`GUÍA DE CONFIGURACIÓN:
-
-1. Abre tu Google Sheet con los cursos
-2. Haz clic en "Archivo" → "Compartir" → "Publicar en web"
-3. En la ventana que aparece:
-   - Selecciona la pestaña "Publicar"
-   - Elige "Valores separados por comas (.csv)"
-   - Haz clic en "Publicar"
-4. Copia la URL que aparece
-5. En el archivo script.js, línea 7, reemplaza:
-   const GOOGLE_SHEETS_CSV_URL = 'TU_URL_AQUI';
-   con tu URL real
-
-Estructura recomendada de columnas:
-Título, Descripción, Categoría, Plataforma, Enlace, Certificado, Activo
-
-Ejemplo:
-React Avanzado,Aprende React desde cero,Programación,Udemy,https://...,TRUE,TRUE`);
+function initAdmin() {
+    const adminAccessBtn = document.getElementById('admin-access-btn');
+    if (adminAccessBtn) {
+        adminAccessBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Mostrar modal simple de admin
+            const adminHTML = `
+                <div class="modal-overlay" id="simple-admin-modal" style="display: flex; z-index: 4000;">
+                    <div class="modal-container" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-cogs"></i> Panel de Administración</h3>
+                            <button class="modal-close" onclick="document.getElementById('simple-admin-modal').style.display='none'">&times;</button>
+                        </div>
+                        <div class="modal-content">
+                            <div style="text-align: center; padding: 20px 0;">
+                                <i class="fas fa-table" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 20px;"></i>
+                                <h4 style="color: var(--text-color); margin-bottom: 15px;">Gestión de Cursos</h4>
+                                <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                                    Para administrar los cursos, edita directamente tu Google Sheet.
+                                    Los cambios se reflejarán automáticamente al recargar la página.
+                                </p>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <a href="${GOOGLE_SHEETS_CSV_URL.replace('/pub?', '/edit?')}" 
+                                       target="_blank" 
+                                       class="btn btn-primary"
+                                       style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <i class="fas fa-edit"></i>
+                                        Editar en Google Sheets
+                                    </a>
+                                    
+                                    <button onclick="loadCourses()" class="btn btn-secondary">
+                                        <i class="fas fa-sync-alt"></i> Actualizar cursos
+                                    </button>
+                                    
+                                    <button onclick="showDetailedGuide()" class="btn" style="background-color: transparent; border: 1px solid var(--medium-gray);">
+                                        <i class="fas fa-question-circle"></i> Ver guía de configuración
+                                    </button>
+                                </div>
+                                
+                                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--medium-gray);">
+                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                        <strong>Estadísticas:</strong><br>
+                                        Cursos totales: ${courses.length}<br>
+                                        Cursos activos: ${courses.filter(c => c.active).length}<br>
+                                        Con certificado: ${courses.filter(c => c.certificate).length}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Agregar o actualizar el modal
+            let adminModal = document.getElementById('simple-admin-modal');
+            if (adminModal) {
+                adminModal.innerHTML = adminHTML;
+                adminModal.style.display = 'flex';
+            } else {
+                adminModal = document.createElement('div');
+                adminModal.id = 'simple-admin-modal';
+                adminModal.innerHTML = adminHTML;
+                document.body.appendChild(adminModal);
+            }
+        });
+    }
 }
 
 // ============================================
-// EXPORTAR FUNCIONES
+// EXPORTAR FUNCIONES GLOBALES
 // ============================================
 window.loadCourses = loadCourses;
+window.clearSearch = clearSearch;
 window.openCourseModal = openCourseModal;
 window.closeModal = closeModal;
-window.showConfigGuide = showConfigGuide;
+window.showDetailedGuide = showDetailedGuide;

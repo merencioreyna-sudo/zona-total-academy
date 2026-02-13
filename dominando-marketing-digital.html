@@ -110,16 +110,31 @@ button:hover{
 }
 
 .option{
-    background:#222;
-    padding:10px;
-    margin:8px 0;
-    border-radius:6px;
+    background:#1e1e28;
+    padding:14px;
+    margin:10px 0;
+    border-radius:10px;
     cursor:pointer;
+    transition:all 0.3s ease;
+    border:1px solid transparent;
 }
 
 .option:hover{
-    background:#333;
+    background:#252536;
+    border:1px solid var(--accent);
+    transform:translateY(-2px);
 }
+
+.option.correct{
+    background:#1f3d2b;
+    border:1px solid #4caf50;
+}
+
+.option.incorrect{
+    background:#3d1f1f;
+    border:1px solid #e50914;
+}
+
 
 .result{
     margin-top:10px;
@@ -197,16 +212,26 @@ function updateProgress(step){
 }
 
 function checkAnswer(element, correct){
+    let options = document.querySelectorAll(".option");
     let result = document.getElementById("result");
+
+    options.forEach(opt => {
+        opt.classList.remove("correct","incorrect");
+    });
+
     if(correct){
-        result.textContent = "Correcto. La estrategia comienza captando atención.";
+        element.classList.add("correct");
+        result.textContent = "✔ Correcto. La estrategia comienza captando atención.";
         result.style.color = "#4caf50";
     }else{
-        result.textContent = "Incorrecto. Revisa el concepto principal.";
+        element.classList.add("incorrect");
+        result.textContent = "✖ Incorrecto. Revisa el concepto principal.";
         result.style.color = "#e50914";
     }
 }
+
 </script>
 
 </body>
 </html>
+

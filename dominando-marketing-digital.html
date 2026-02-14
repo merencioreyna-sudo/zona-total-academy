@@ -163,23 +163,48 @@ button:hover{
     <div class="progress" id="progress"></div>
 </div>
 
-<!-- LECCIÓN 1 -->
 <div class="card active" id="lesson1">
-    <audio class="audio-player" controls>
-        <source src="audio/leccion1.mp3" type="audio/mpeg">
-        Tu navegador no soporta audio.
-    </audio>
-
     <div class="text-content">
         El marketing digital no es simplemente publicar en redes sociales.
-        Es estrategia aplicada al comportamiento humano.
     </div>
-
-    <button onclick="nextLesson(1)">Continuar</button>
+    <button onclick="nextLesson(1)">Siguiente</button>
 </div>
 
-<!-- MINI TEST -->
 <div class="card" id="lesson2">
+    <div class="text-content">
+        Es estrategia aplicada al comportamiento humano.
+    </div>
+    <button onclick="nextLesson(2)">Siguiente</button>
+</div>
+
+<div class="card" id="lesson3">
+    <div class="text-content">
+        Cada persona está expuesta a cientos de mensajes diarios,
+        pero solo presta atención a lo que le interesa o le resuelve un problema.
+    </div>
+    <button onclick="nextLesson(3)">Siguiente</button>
+</div>
+
+<div class="card" id="lesson4">
+    <div class="text-content">
+        El marketing digital tiene cuatro pilares:
+        Atención, Interés, Confianza y Conversión.
+    </div>
+    <button onclick="nextLesson(4)">Siguiente</button>
+</div>
+
+<div class="card" id="lesson5">
+    <div class="text-content">
+        No se trata de publicar más.
+        Se trata de pensar estratégicamente.
+    </div>
+    <button onclick="nextLesson(5)">Ir al Test</button>
+</div>
+
+
+<!-- MINI TEST -->
+<div class="card" id="lesson6">
+
     <div class="text-content">
         ¿Cuál es el primer paso del marketing digital?
     </div>
@@ -198,7 +223,8 @@ button:hover{
 </div>
 
 <script>
-let totalSteps = 2;
+let totalSteps = 6;
+
 
 function nextLesson(current){
     document.getElementById("lesson"+current).classList.remove("active");
@@ -237,5 +263,6 @@ function checkAnswer(element, correct){
 
 </body>
 </html>
+
 
 

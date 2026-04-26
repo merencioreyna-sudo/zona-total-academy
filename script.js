@@ -1,48 +1,59 @@
 // CONFIGURACIÓN
-const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1YAqfZadMR5O6mABhl0QbhF8scbtIW9JJPfwdED4bzDQ/edit?gid=0#gid=0';
+const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJyqaN42-hjK2Wtkk1nXdlsEZlZEEtcH3FQvGDJZlB4QVK-rBwnOSpW8dJkAXnzvkLLHfDyYIJe_9v/pub?gid=0&single=true&output=csv';
 
 // CURSOS CON VIDEO REAL DENTRO DE LA WEB Y PORTADAS
-let courses = [
-    {
-        id: 1,
-        title: "React Avanzado 2024",
-        description: "Curso completo de React con proyectos reales. Aprende Hooks, Context API, Redux, Testing y despliegue profesional.",
-        category: "Programación",
-        platform: "YouTube",
-        videoId: "Ke90Tje7VS0",
-        thumbnail: "https://img.youtube.com/vi/Ke90Tje7VS0/maxresdefault.jpg", // PORTADA DE YOUTUBE
-        duration: "15 horas",
-        level: "Avanzado",
-        certificate: true,
-        active: true
-    },
-    {
-        id: 2,
-        title: "JavaScript Moderno ES6+",
-        description: "Domina JavaScript moderno con todas las características nuevas de ES6 en adelante.",
-        category: "Programación", 
-        platform: "YouTube",
-        videoId: "2SetvwBV-SU",
-        thumbnail: "https://img.youtube.com/vi/2SetvwBV-SU/maxresdefault.jpg", // PORTADA DE YOUTUBE
-        duration: "10 horas",
-        level: "Intermedio",
-        certificate: true,
-        active: true
-    },
-    {
-        id: 3,
-        title: "Node.js Backend Profesional",
-        description: "Desarrollo backend con Node.js, Express, MongoDB y autenticación JWT.",
-        category: "Backend",
-        platform: "YouTube",
-        videoId: "1hpc70_OoAg",
-        thumbnail: "https://img.youtube.com/vi/1hpc70_OoAg/maxresdefault.jpg", // PORTADA DE YOUTUBE
-        duration: "12 horas",
-        level: "Intermedio",
-        certificate: true,
-        active: true
+let courses = [];
+
+async function cargarCursosDesdeSheets() {
+    try {
+        const res = await fetch(GOOGLE_SHEETS_CSV_URL);
+        const text = await res.text();
+
+function parseCSV(text) {
+    const lines = text.split("\n");
+    return lines.map(line => {
+        const result = [];
+        let current = '';
+        let insideQuotes = false;
+
+        for (let char of line) {
+            if (char === '"') {
+                insideQuotes = !insideQuotes;
+            } else if (char === ',' && !insideQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+
+        result.push(current);
+        return result;
+    });
+}
+
+// 👇 ESTA LÍNEA ES LA CLAVE Y VA AQUÍ
+const rows = parseCSV(text);
+
+const headers = rows[0];
+const data = rows.slice(1);
+
+        courses = data.map(row => {
+    return {
+        id: row[0],
+        title: row[1],
+        description: row[2],
+        category: row[3],
+        platform: row[4],
+        link: row[5],
+        embed: row[6]
+    };
+});
+
+    } catch (error) {
+        console.error("Error cargando cursos:", error);
     }
-];
+}
 
 let categories = [{ id: "todos", name: "Todos", displayName: "Todos" }];
 let currentCategory = "todos";
@@ -50,7 +61,7 @@ let searchQuery = "";
 let customLogoUrl = localStorage.getItem('customLogoUrl') || "";
 
 // =============== INICIALIZACIÓN ===============
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('Academia Élite - Iniciando...');
     
     // Menú móvil
@@ -72,10 +83,44 @@ document.addEventListener('DOMContentLoaded', function() {
     // Búsqueda
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value.toLowerCase();
+        const suggestionsBox = document.getElementById("search-suggestions");
+
+searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase();
+    renderCourses();
+
+    const value = e.target.value.trim().toLowerCase();
+
+    if (!value) {
+        suggestionsBox.style.display = "none";
+        return;
+    }
+
+    const suggestions = courses
+        .map(c => c.title)
+        .filter(title => title.toLowerCase().includes(value))
+        .slice(0, 5);
+
+    if (suggestions.length === 0) {
+        suggestionsBox.style.display = "none";
+        return;
+    }
+
+    suggestionsBox.innerHTML = suggestions
+        .map(title => `<div>${title}</div>`)
+        .join("");
+
+    suggestionsBox.style.display = "block";
+
+    suggestionsBox.querySelectorAll("div").forEach(item => {
+        item.addEventListener("click", () => {
+            searchInput.value = item.textContent;
+            searchQuery = item.textContent.toLowerCase();
+            suggestionsBox.style.display = "none";
             renderCourses();
         });
+    });
+});
     }
 
     // Configurar modal
@@ -91,16 +136,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.target === courseModal) closeModal();
         });
     }
-
-    // Configurar Admin
-    setupAdmin();
     
     // Mostrar cursos INMEDIATAMENTE
-    updateCategories();
-    renderFilters();
-    renderCourses();
-    updateCourseCount();
-    updateHeroLogo();
+    await cargarCursosDesdeSheets();
+
+updateCategories();
+renderFilters();
+renderCourses();
+updateCourseCount();
+updateHeroLogo();
 });
 
 // =============== RENDERIZAR CURSOS ===============
@@ -157,17 +201,26 @@ function renderCourses() {
     }
     
     if (searchQuery) {
-        filteredCourses = filteredCourses.filter(course => {
-            const searchText = [
-                course.title || '',
-                course.description || '',
-                course.category || '',
-                course.platform || ''
-            ].join(' ').toLowerCase();
-            
-            return searchText.includes(searchQuery);
-        });
-    }
+    const query = searchQuery.trim().toLowerCase();
+
+    filteredCourses = filteredCourses.filter(course => {
+        const searchText = [
+            course.title || '',
+            course.description || '',
+            course.category || '',
+            course.platform || ''
+        ].join(' ')
+         .toLowerCase()
+         .normalize("NFD")
+         .replace(/[\u0300-\u036f]/g, ""); // quitar acentos
+
+        const cleanQuery = query
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+
+        return searchText.includes(cleanQuery);
+    });
+}
     
     // Limpiar grid
     coursesGrid.innerHTML = '';
@@ -213,13 +266,12 @@ function createCourseCard(course) {
     // HTML con PORTADA/THUMBNAIL
     courseCard.innerHTML = `
         <div class="course-image">
-            ${course.thumbnail ? 
-                `<img src="${course.thumbnail}" alt="${course.title}" 
-                     style="width:100%;height:100%;object-fit:cover;border-radius:8px 8px 0 0;"
-                     onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJNb250c2VycmF0IiBmb250LXNpemU9IjE0IiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Q1VSU08gREUgJFtlbnRlciB0aXRsZV08L3RleHQ+PC9zdmc+'; this.parentElement.innerHTML='<i class=\'${iconClass}\'></i>'">
-                ` : 
-                `<i class="${iconClass}"></i>`
-            }
+            ${getThumbnail(course) ? 
+    `<img src="${getThumbnail(course)}" alt="${course.title}" 
+         style="width:100%;height:100%;object-fit:cover;border-radius:8px 8px 0 0;">`
+    : 
+    `<i class="${iconClass}"></i>`
+}
         </div>
         <div class="course-content">
             <div class="course-header">
@@ -240,12 +292,7 @@ function createCourseCard(course) {
                 <button class="btn btn-small btn-primary view-course-btn" data-id="${course.id}">
                     <i class="fas fa-play-circle"></i> Ver Curso
                 </button>
-                ${course.videoId ? 
-                    `<a href="https://www.youtube.com/watch?v=${course.videoId}" target="_blank" class="btn btn-small btn-secondary">
-                        <i class="fab fa-youtube"></i> YouTube
-                    </a>` : 
-                    ''
-                }
+                
             </div>
         </div>
     `;
@@ -261,7 +308,7 @@ function createCourseCard(course) {
 function updateCourseCount() {
     const totalCoursesElement = document.getElementById('total-courses');
     if (totalCoursesElement) {
-        const activeCourses = courses.filter(course => course.active === true).length;
+        const activeCourses = courses.length;
         totalCoursesElement.textContent = activeCourses;
     }
 }
@@ -305,43 +352,36 @@ function openCourseModal(course) {
     `;
     
     // AÑADIR VIDEO DENTRO DEL MODAL
-    if (course.videoId) {
-        modalHTML += `
-            <div class="course-embed">
-                <h4 style="color: var(--text-color); margin-bottom: 15px;">Video del Curso</h4>
-                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; margin-bottom: 20px;">
-                    <iframe 
-                        src="https://www.youtube.com/embed/${course.videoId}?rel=0&showinfo=0" 
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen
-                        title="${course.title}">
-                    </iframe>
-                </div>
-                <p style="color: var(--text-secondary); font-size: 0.9rem; text-align: center;">
-                    Reproduciendo desde YouTube. El video se mostrará dentro de tu web.
-                </p>
+    if (course.embed || course.link) {
+        let videoSrc = "";
+
+if (course.embed) {
+    videoSrc = course.embed;
+} else if (course.link && course.link.includes("youtube")) {
+    const id = course.link.split("v=")[1]?.split("&")[0];
+    videoSrc = `https://www.youtube.com/embed/${id}`;
+}
+
+if (videoSrc) {
+    modalHTML += `
+        <div class="course-embed">
+            <h4 style="color: var(--text-color); margin-bottom: 15px;">Video del Curso</h4>
+            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; margin-bottom: 20px;">
+                <iframe 
+                    src="${videoSrc}" 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+                    allowfullscreen>
+                </iframe>
             </div>
-        `;
+        </div>
+    `;
+}
     }
     
     modalHTML += `
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--medium-gray);">
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                    ${course.certificate ? 
-                        `<div style="display: flex; align-items: center; gap: 8px; color: var(--primary-gold);">
-                            <i class="fas fa-certificate"></i>
-                            <span>Incluye certificado</span>
-                        </div>` : 
-                        ''
-                    }
-                    ${course.active ? 
-                        `<div style="display: flex; align-items: center; gap: 8px; color: #4CAF50;">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Curso activo</span>
-                        </div>` : 
-                        ''
-                    }
+                    
                 </div>
             </div>
         </div>
@@ -360,141 +400,6 @@ function closeModal() {
     }
 }
 
-// =============== ADMIN ===============
-function setupAdmin() {
-    // Botón Admin
-    const adminAccessBtn = document.getElementById('admin-access-btn');
-    if (adminAccessBtn) {
-        adminAccessBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('admin-overlay').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        });
-    }
-    
-    // Login
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('admin-username').value;
-            const password = document.getElementById('admin-password').value;
-            
-            if (username === 'admin' && password === 'admin123') {
-                document.getElementById('admin-login').style.display = 'none';
-                document.getElementById('admin-panel').style.display = 'block';
-            } else {
-                alert('Credenciales: admin / admin123');
-            }
-        });
-    }
-    
-    // Botón mostrar credenciales
-    const showCredsBtn = document.getElementById('show-creds-btn');
-    if (showCredsBtn) {
-        showCredsBtn.addEventListener('click', () => {
-            const loginHint = document.getElementById('login-hint');
-            if (loginHint) {
-                loginHint.classList.toggle('active');
-                showCredsBtn.textContent = loginHint.classList.contains('active') ? 
-                    'Ocultar Credenciales' : 'Mostrar Credenciales';
-            }
-        });
-    }
-    
-    // Cancelar login
-    const cancelLoginBtn = document.getElementById('cancel-login-btn');
-    if (cancelLoginBtn) {
-        cancelLoginBtn.addEventListener('click', () => {
-            document.getElementById('admin-overlay').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        });
-    }
-    
-    // Logout
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            document.getElementById('admin-login').style.display = 'block';
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('admin-username').value = '';
-            document.getElementById('admin-password').value = '';
-            const loginHint = document.getElementById('login-hint');
-            if (loginHint) loginHint.classList.remove('active');
-            const showCredsBtn = document.getElementById('show-creds-btn');
-            if (showCredsBtn) showCredsBtn.textContent = 'Mostrar Credenciales';
-        });
-    }
-    
-    // Tabs
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
-            
-            // Actualizar botones
-            tabBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Actualizar contenido
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-                if (content.id === tabId) {
-                    content.classList.add('active');
-                }
-            });
-        });
-    });
-    
-    // Logo personalizado
-    const saveLogoBtn = document.getElementById('save-logo-btn');
-    const resetLogoBtn = document.getElementById('reset-logo-btn');
-    const logoUrlInput = document.getElementById('logo-url');
-    
-    if (saveLogoBtn) {
-        saveLogoBtn.addEventListener('click', () => {
-            const url = logoUrlInput.value.trim();
-            if (url) {
-                customLogoUrl = url;
-                localStorage.setItem('customLogoUrl', url);
-                updateHeroLogo();
-                alert('Logo guardado. Recarga la página para verlo en todas partes.');
-            } else {
-                alert('Ingresa una URL para el logo');
-            }
-        });
-    }
-    
-    if (resetLogoBtn) {
-        resetLogoBtn.addEventListener('click', () => {
-            customLogoUrl = '';
-            localStorage.removeItem('customLogoUrl');
-            logoUrlInput.value = '';
-            updateHeroLogo();
-            alert('Logo restablecido al predeterminado');
-        });
-    }
-    
-    if (logoUrlInput) {
-        logoUrlInput.value = customLogoUrl;
-        logoUrlInput.addEventListener('input', () => {
-            const img = document.getElementById('logo-preview-img');
-            const text = document.getElementById('default-logo-text');
-            const url = logoUrlInput.value.trim();
-            
-            if (img && text) {
-                if (url) {
-                    img.src = url;
-                    img.classList.add('active');
-                    text.style.display = 'none';
-                } else {
-                    img.classList.remove('active');
-                    text.style.display = 'block';
-                }
-            }
-        });
-    }
-}
 
 function updateHeroLogo() {
     const heroLogoImg = document.getElementById('hero-logo-img');
@@ -530,3 +435,37 @@ window.closeModal = closeModal;
 
 // Inicializar logo
 updateHeroLogo();
+
+function getThumbnail(course) {
+    if (course.link && course.link.includes("youtube")) {
+        const id = course.link.split("v=")[1]?.split("&")[0];
+        if (id) {
+            return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+        }
+    }
+    return null;
+}
+
+window.addEventListener("scroll", () => {
+    const sections = document.querySelectorAll("section");
+    const navLinks = document.querySelectorAll(".nav-link");
+
+    let current = "";
+
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        const sectionHeight = section.clientHeight;
+
+        if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+            current = section.getAttribute("id");
+        }
+    });
+
+    navLinks.forEach(link => {
+        link.classList.remove("active");
+
+        if (link.getAttribute("href") === "#" + current) {
+            link.classList.add("active");
+        }
+    });
+});

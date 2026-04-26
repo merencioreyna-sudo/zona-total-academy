@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zona Total - Cursos </title>
+    <title>ZT-Cursos Premium</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,20 +15,18 @@
         <div class="container">
             <nav class="navbar">
                 <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-gem"></i>
-                    </div>
-                    <span class="logo-text">Zona Total Cursos</span>
-                </div>
+    <div class="logo-circle">ZT</div>
+    <span class="logo-text">Cursos</span>
+</div>
                 
                 <ul class="nav-menu">
-                    <li><a href="https://merencioreyna-sudo.github.io/zona-total-peliculas/" class="nav-link">Inicio</a></li>
+                    <li><a href="https://merencioreyna-sudo.github.io/zona-total-peliculas/" class="nav-link">
+    <i class="fas fa-home"></i> Inicio
+</a></li>
                     <li><a href="#courses" class="nav-link">Cursos</a></li>
                     <li><a href="#about" class="nav-link">Nosotros</a></li>
                     <li><a href="#contact" class="nav-link">Contacto</a></li>
-                    <li><a href="#" id="admin-access-btn" class="nav-link admin-access">
-                        <i class="fas fa-lock"></i> Admin
-                    </a></li>
+                    
                 </ul>
                 
                 <div class="hamburger">
@@ -46,7 +44,7 @@
             <div class="hero-logo">
                 <div class="hero-logo-default">
                     <i class="fas fa-gem"></i>
-                    <h1 class="hero-logo-text">Zona Total Cursos</h1>
+                    
                 </div>
                 <img src="" alt="Logo personalizado" class="hero-logo-img" id="hero-logo-img">
             </div>
@@ -67,8 +65,7 @@
                     <div class="stat-text">Cursos Disponibles</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-number">100%</div>
-                    <div class="stat-text">Certificados</div>
+                    
                 </div>
                 <div class="stat">
                     <div class="stat-number">24/7</div>
@@ -93,9 +90,11 @@
                 </div>
                 
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Buscar cursos...">
-                    <i class="fas fa-search"></i>
-                </div>
+    <input type="text" id="search-input" placeholder="Buscar cursos...">
+    <i class="fas fa-search"></i>
+
+    <div id="search-suggestions" class="search-suggestions"></div>
+</div>
             </div>
             
             <!-- Loading State -->
@@ -137,8 +136,8 @@
                         <div class="about-icon">
                             <i class="fas fa-award"></i>
                         </div>
-                        <h3>Certificación Premium</h3>
-                        <p>Todos nuestros cursos incluyen certificados reconocidos que validan tus nuevas habilidades.</p>
+                        <h3>Contenido Seleccionado</h3>
+<p>Cada curso ha sido elegido estratégicamente para garantizar calidad, utilidad y una experiencia de aprendizaje enfocada en resultados reales.</p>
                     </div>
                     
                     <div class="about-card">
@@ -166,21 +165,19 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-logo">
-                    <h3>Zona Total Cursos</h3>
-                    <p>Excelencia educativa para todos. Cursos premium y contenido de alta calidad.</p>
+                    <h3>Academia Élite</h3>
+                    <p>Excelencia educativa para profesionales exigentes. Cursos premium y contenido de alta calidad.</p>
                 </div>
                 
                 <div class="footer-info">
                     <p><i class="fas fa-envelope"></i> anelistrabajo@gmail.com</p>
-                    <p><i class="fas fa-phone"></i> +53 55877689</p>
-                    
-                    <p><i class="fas fa-clock"></i> Soporte 24/7</p>
+                    <p><i class="fas fa-phone"></i> + 53 55877689</p>
+                    <p><i class="fas fa-clock"></i> Soporte 24/7 para estudiantes</p>
                 </div>
             </div>
             
             <div class="footer-bottom">
-                <p>&copy; 2025 Zona Total Cursos. Todos los derechos reservados.</p>
-                <p class="footer-note">Plataforma educativa para usuarios premium</p>
+                <p>&copy; 2026 Zona Total. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
@@ -204,149 +201,7 @@
         </div>
     </div>
 
-    <!-- Admin Panel -->
-    <div class="admin-overlay" id="admin-overlay">
-        <div class="admin-container">
-            <!-- Admin Login -->
-            <div class="admin-login" id="admin-login">
-                <div class="login-header">
-                    <h3><i class="fas fa-lock"></i> Acceso Administrativo</h3>
-                    <p>Ingresa tus credenciales para acceder al panel de administración</p>
-                </div>
-                
-                <form class="login-form" id="login-form">
-                    <div class="form-group">
-                        <label for="admin-username">Usuario</label>
-                        <input type="text" id="admin-username" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="admin-password">Contraseña</label>
-                        <input type="password" id="admin-password" required>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Ingresar</button>
-                        <button type="button" class="btn btn-secondary" id="cancel-login-btn">Cancelar</button>
-                    </div>
-                </form>
-                
-                <div class="login-hint" id="login-hint">
-                    <p><strong>Credenciales de prueba:</strong></p>
-                    <p>Usuario: <code>admin</code></p>
-                    <p>Contraseña: <code>admin123</code></p>
-                    <p class="hint-note">Estas credenciales son solo para demostración</p>
-                </div>
-                
-                <button id="show-creds-btn" class="btn btn-small">Mostrar Credenciales</button>
-            </div>
-            
-            <!-- Admin Panel -->
-            <div class="admin-panel" id="admin-panel" style="display: none;">
-                <div class="admin-header">
-                    <h3><i class="fas fa-cogs"></i> Panel de Administración</h3>
-                    <button class="btn btn-small" id="logout-btn">Cerrar Sesión</button>
-                </div>
-                
-                <div class="admin-tabs">
-                    <button class="tab-btn active" data-tab="courses-tab">Cursos</button>
-                    <button class="tab-btn" data-tab="add-course-tab">Agregar Curso</button>
-                    <button class="tab-btn" data-tab="branding-tab">Branding</button>
-                </div>
-                
-                <!-- Courses Management Tab -->
-                <div class="tab-content active" id="courses-tab">
-                    <h4>Gestión de Cursos</h4>
-                    <div class="admin-courses-list" id="admin-courses-list">
-                        <!-- Courses will be loaded from Google Sheets -->
-                    </div>
-                </div>
-                
-                <!-- Add Course Tab -->
-                <div class="tab-content" id="add-course-tab">
-                    <h4>Agregar Nuevo Curso</h4>
-                    <form id="add-course-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="new-course-title">Título del Curso *</label>
-                                <input type="text" id="new-course-title" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="new-course-platform">Plataforma *</label>
-                                <select id="new-course-platform" required>
-                                    <option value="">Seleccionar plataforma</option>
-                                    <option value="Udemy">Udemy</option>
-                                    <option value="Coursera">Coursera</option>
-                                    <option value="Platzi">Platzi</option>
-                                    <option value="EdX">EdX</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="new-course-category">Categoría *</label>
-                                <select id="new-course-category" required>
-                                    <option value="">Cargando categorías...</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="new-course-link">Enlace o ID *</label>
-                                <input type="text" id="new-course-link" required>
-                                <span class="form-hint">Enlace externo o ID del curso</span>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="new-course-description">Descripción *</label>
-                            <textarea id="new-course-description" rows="4" required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="new-course-certificate" checked>
-                                <label for="new-course-certificate">Incluye certificado</label>
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Agregar a Google Sheets</button>
-                            <button type="reset" class="btn btn-secondary">Limpiar</button>
-                        </div>
-                    </form>
-                    
-                    <div id="form-status" style="margin-top: 20px;"></div>
-                </div>
-                
-                <!-- Branding Tab -->
-                <div class="tab-content" id="branding-tab">
-                    <h4>Personalización de Marca</h4>
-                    <div class="branding-management">
-                        <div class="form-group">
-                            <label for="logo-url">URL del Logo Personalizado</label>
-                            <input type="text" id="logo-url" placeholder="https://ejemplo.com/logo.png">
-                            <span class="form-hint">Ingresa la URL completa de la imagen del logo</span>
-                        </div>
-                        
-                        <div class="logo-preview">
-                            <h5>Vista Previa del Logo</h5>
-                            <div class="preview-container">
-                                <img id="logo-preview-img" src="" alt="Logo personalizado">
-                                <p class="preview-text" id="default-logo-text">Logo predeterminado</p>
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button class="btn btn-primary" id="save-logo-btn">Guardar Logo</button>
-                            <button class="btn btn-secondary" id="reset-logo-btn">Restablecer Logo</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Configuración de Google Apps Script -->
     <script>
         // Configuración simple - solo para referencia

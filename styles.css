@@ -1310,24 +1310,26 @@ h2.section-title {
 
 
 /* ===== Etiqueta NUEVO ===== */
-.new-badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 99;          /* 👈 cámbialo de 5 a 99 */
-    background: linear-gradient(45deg, #e50914, #ff6b6b);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
-    animation: newBadgePulse 1.8s infinite;
-    pointer-events: none;
+.course-image .new-badge {
+    position: absolute !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 999 !important;
+    background: linear-gradient(45deg, #e50914, #ff6b6b) !important;
+    color: #fff !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5) !important;
+    animation: newBadgePulse 1.8s infinite !important;
+    pointer-events: none !important;
+    display: inline-block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 @keyframes newBadgePulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4); }
-    50% { transform: scale(1.08); box-shadow: 0 4px 20px rgba(229, 9, 20, 0.7); }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }

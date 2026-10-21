@@ -1310,26 +1310,28 @@ h2.section-title {
 
 
 /* ===== Etiqueta NUEVO ===== */
-.course-image .new-badge {
-    position: absolute !important;
-    top: 12px !important;
-    left: 12px !important;
-    z-index: 999 !important;
-    background: linear-gradient(45deg, #e50914, #ff6b6b) !important;
-    color: #fff !important;
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
-    padding: 6px 14px !important;
-    border-radius: 20px !important;
-    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5) !important;
-    animation: newBadgePulse 1.8s infinite !important;
-    pointer-events: none !important;
-    display: inline-block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+.course-image {
+    position: relative !important;
 }
 
-@keyframes newBadgePulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+.course-image .new-badge {
+    position: absolute !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 9999 !important;
+    background: #e50914 !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
+}
+
+/* Asegurar que el overlay no tape el badge */
+.course-image::after {
+    z-index: 1 !important;
 }

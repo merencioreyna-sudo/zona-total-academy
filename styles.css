@@ -1210,7 +1210,7 @@ h2.section-title {
     justify-content: center;
     font-size: 3rem;
     color: var(--primary-gold);
-    position: relative;
+    position: relative;   /* 👈 AGREGA ESTA LÍNEA */
     overflow: hidden;
     border-radius: 8px 8px 0 0;
 }

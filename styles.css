@@ -1307,3 +1307,27 @@ h2.section-title {
 .search-suggestions div:hover {
     background: var(--medium-gray);
 }
+
+
+/* ===== Etiqueta NUEVO ===== */
+.new-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 5;
+    background: linear-gradient(45deg, #e50914, #ff6b6b);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+    animation: newBadgePulse 1.8s infinite;
+    pointer-events: none;
+}
+
+@keyframes newBadgePulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4); }
+    50% { transform: scale(1.08); box-shadow: 0 4px 20px rgba(229, 9, 20, 0.7); }
+}

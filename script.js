@@ -37,24 +37,24 @@ async function cargarCursosDesdeSheets() {
 
         // ✅ Mapeo EXACTO a tus 7 columnas:
         // 0: id | 1: Título | 2: Descripción | 3: Categoría | 4: Plataforma | 5: Enlace | 6: Embed
-        courses = data
-            .filter(row => row[0] && row[1]) // ignorar filas vacías
-            .map(row => {
-                return {
-                    id: (row[0] || '').trim(),
-                    title: (row[1] || '').trim(),
-                    description: (row[2] || '').trim(),
-                    category: (row[3] || 'General').trim(),
-                    platform: (row[4] || '').trim(),
-                    link: (row[5] || '').trim(),
-                    embed: (row[6] || '').trim(),
-                    // Campos que NO tienes en el Sheet → los dejamos vacíos
-                    duration: '',
-                    level: '',
-                    certificate: false,
-                    active: true
-                };
-            });
+       courses = data
+    .filter(row => row[0] && row[1])
+    .map(row => {
+        return {
+            id: (row[0] || '').trim(),
+            title: (row[1] || '').trim(),
+            description: (row[2] || '').trim(),
+            category: (row[3] || 'General').trim(),
+            platform: (row[4] || '').trim(),
+            link: (row[5] || '').trim(),
+            embed: (row[6] || '').trim(),
+            duration: '',
+            level: '',
+            certificate: false,
+            active: true
+        };
+    })
+    .sort((a, b) => Number(b.id) - Number(a.id));
 
         console.log('Cursos cargados:', courses); // debug
 
@@ -250,6 +250,15 @@ function renderCourses() {
     });
 }
 
+// ✅ Devuelve el id más alto (el curso más reciente)
+function getNewestCourseId() {
+    if (courses.length === 0) return null;
+    return courses.reduce((max, c) => {
+        const n = Number(c.id) || 0;
+        return n > max ? n : max;
+    }, 0);
+}
+
 function createCourseCard(course) {
     const courseCard = document.createElement('div');
     courseCard.className = 'course-card';
@@ -262,6 +271,9 @@ function createCourseCard(course) {
     if (course.category.includes('Inteligencia')) iconClass = 'fas fa-robot';
     if (course.category.includes('Emprendimiento')) iconClass = 'fas fa-rocket';
 
+       // ✅ ¿Es el curso más nuevo?
+    const isNew = Number(course.id) === getNewestCourseId();
+
     courseCard.innerHTML = `
         <div class="course-image">
             ${getThumbnail(course) ?
@@ -271,6 +283,7 @@ function createCourseCard(course) {
                 :
                 `<i class="${iconClass}"></i>`
             }
+            ${isNew ? '<span class="new-badge">🔥 NUEVO</span>' : ''}
         </div>
         <div class="course-content">
             <div class="course-header">

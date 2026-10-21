@@ -1314,7 +1314,7 @@ h2.section-title {
     position: absolute;
     top: 12px;
     left: 12px;
-    z-index: 5;
+    z-index: 99;          /* 👈 cámbialo de 5 a 99 */
     background: linear-gradient(45deg, #e50914, #ff6b6b);
     color: #fff;
     font-size: 0.75rem;
